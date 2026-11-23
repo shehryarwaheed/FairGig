@@ -80,4 +80,11 @@ public class DefaultEarningsService implements EarningsService {
         record.setEntryMethod(EntryMethod.MANUAL);
         return earnings.save(record);
     }
+
+    @Override
+    public List<EarningsRecord> recentEarnings(int workerId, int limit) {
+        int safeLimit = Math.max(1, Math.min(limit, 100));
+        return earnings.findByWorker(workerId, com.fairgig.repository.EarningsFilter.none())
+            .stream().limit(safeLimit).toList();
+    }
 }

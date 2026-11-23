@@ -6,6 +6,7 @@ import com.fairgig.model.Role;
 import com.fairgig.proxy.Access;
 import com.fairgig.proxy.Self;
 import com.fairgig.strategy.validation.ValidationResult;
+import java.util.List;
 
 /**
  * Logging earnings by hand (FR-09, FR-10, FR-11). Only workers log earnings, and only their own.
@@ -30,4 +31,12 @@ public interface EarningsService {
      */
     @Access(roles = Role.WORKER)
     EarningsRecord logEarning(@Self int workerId, EarningInput input);
+
+    /**
+     * The worker's latest earnings (newest shift first, at most {@code limit}, between 1 and 100).
+     * Used to show "recently logged" next to the entry form and to pick an earning for evidence.
+     * The full history with filters and verification status is part of the verification feature.
+     */
+    @Access(roles = Role.WORKER)
+    List<EarningsRecord> recentEarnings(@Self int workerId, int limit);
 }
