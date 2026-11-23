@@ -328,3 +328,70 @@
 .scroll-bar .track { -fx-background-color: transparent; }
 .scroll-bar .increment-button, .scroll-bar .decrement-button { -fx-padding: 0; -fx-pref-height: 0; -fx-background-color: transparent; }
 .scroll-bar .increment-arrow, .scroll-bar .decrement-arrow { -fx-shape: " "; -fx-padding: 0; }
+
+/* =====================================================================
+   Screens wired to the backend (forms, banners, tables, chips, badges)
+   ===================================================================== */
+
+.error-text { -fx-font-size: 12px; -fx-text-fill: -coral; }
+.hint-text  { -fx-font-size: 12px; -fx-text-fill: -whisper; }
+.section-title { -fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: -text; }
+
+/* ---- banners ---- */
+.banner { -fx-background-radius: 16; -fx-padding: 12 16 12 16; }
+.banner .label { -fx-font-size: 13px; -fx-font-weight: bold; }
+.banner-error   { -fx-background-color: -coral-soft; }
+.banner-error .label { -fx-text-fill: -coral; }
+.banner-error .icon  { -fx-background-color: -coral; }
+.banner-success { -fx-background-color: -mint-soft; }
+.banner-success .label { -fx-text-fill: derive(-mint, -22%); }
+.banner-success .icon  { -fx-background-color: -mint; }
+
+/* ---- option chips (single choice, wrapping) ---- */
+.chip-option {
+    -fx-background-color: -well;
+    -fx-background-radius: 999;
+    -fx-padding: 8 16 8 16;
+    -fx-cursor: hand;
+    -fx-effect: innershadow(gaussian, -inset-dark, 6, 0, 2, 2);
+}
+.chip-option .chip-label { -fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: -muted; }
+.chip-option:hover { -fx-background-color: -accent-soft; }
+.chip-option.selected { -fx-background-color: -accent; -fx-effect: dropshadow(gaussian, -accent-glow, 18, 0.0, 0, 3); }
+.chip-option.selected .chip-label { -fx-text-fill: white; }
+
+/* ---- simple tables ---- */
+.table-header { -fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: -whisper; }
+.table-cell { -fx-padding: 12 8 12 8; -fx-border-color: transparent transparent -well transparent; -fx-border-width: 0 0 1 0; }
+.table-cell .label { -fx-font-size: 13px; -fx-text-fill: -text; }
+.table-cell.header-cell { -fx-padding: 4 8 8 8; }
+
+/* ---- status chips ---- */
+.status-chip { -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 4 10 4 10; -fx-background-radius: 999; }
+.status-pending      { -fx-background-color: -amber-soft; -fx-text-fill: derive(-amber, -22%); }
+.status-verified     { -fx-background-color: -mint-soft;  -fx-text-fill: derive(-mint, -22%); }
+.status-flagged      { -fx-background-color: -coral-soft; -fx-text-fill: -coral; }
+.status-unverifiable { -fx-background-color: -well;       -fx-text-fill: -muted; }
+.type-chip { -fx-font-size: 11px; -fx-font-weight: bold; -fx-padding: 4 10 4 10; -fx-background-radius: 999; -fx-background-color: -blue-soft; -fx-text-fill: -blue; }
+
+/* ---- notifications ---- */
+.note-row { -fx-padding: 14 16 14 16; -fx-background-radius: 16; -fx-cursor: hand; }
+.note-row:hover { -fx-background-color: -well; }
+.note-row.unread { -fx-background-color: -accent-soft; }
+.note-row .label { -fx-font-size: 14px; }
+.note-dot { -fx-background-color: -accent; -fx-background-radius: 999; }
+.note-dot.read { -fx-background-color: transparent; }
+.badge { -fx-background-color: -coral; -fx-background-radius: 999; -fx-padding: 1 6 1 6; }
+.badge .label { -fx-text-fill: white; -fx-font-size: 10px; -fx-font-weight: bold; }
+
+/* ---- misc ---- */
+.pill-static { -fx-background-radius: 999; -fx-padding: 9 18 9 18; }
+.pill-static .chip-label { -fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold; }
+.pill-static.pill-worker   { -fx-background-color: -violet; }
+.pill-static.pill-rep      { -fx-background-color: -mint; }
+.pill-static.pill-advocate { -fx-background-color: -coral; }
+.demo-chip { -fx-background-color: transparent; -fx-background-radius: 999; -fx-padding: 6 12 6 12; -fx-cursor: hand; -fx-border-color: -well; -fx-border-radius: 999; -fx-border-width: 1.5; }
+.demo-chip .chip-label { -fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: -muted; }
+.demo-chip:hover { -fx-background-color: -accent-soft; }
+.thumb { -fx-background-color: -well; -fx-background-radius: 16; -fx-padding: 8; }
+.tint-violet { -fx-background-color: -violet-soft; }

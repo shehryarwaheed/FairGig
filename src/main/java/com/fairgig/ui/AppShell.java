@@ -1,9 +1,13 @@
 package com.fairgig.ui;
 
+import com.fairgig.controller.AppContext;
+import com.fairgig.controller.Outcome;
+import com.fairgig.model.User;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import javafx.animation.FadeTransition;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -17,10 +21,11 @@ import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 
 /**
- * The logged-in frame: clay sidebar, header with clickable role tabs, currency
- * picker, theme switch, and the content area. Pages are empty placeholders.
+ * The logged-in frame: clay sidebar with the tabs of the user's role, a header with the
+ * role badge, currency picker, theme switch, notification bell and avatar, and the page area.
+ * Tabs of features that are not built yet show a placeholder (see {@link PageFactory}).
  */
-public class AppShell extends StackPane {
+public class AppShell extends StackPane implements PageNavigator {
 
     private final Map<NavItem, HBox> navNodes = new LinkedHashMap<>();
     private final VBox navBox = new VBox(6);
@@ -31,24 +36,79 @@ public class AppShell extends StackPane {
     private final Label userName = Widgets.label("", "h-card");
     private final Label userRole = Widgets.label("", "h-sub");
     private final Label currencyLabel = Widgets.label("", "chip-label");
+    private final Label badgeCount = new Label();
+    private final StackPane badge = new StackPane(badgeCount);
     private final Pane menuCatcher = new Pane();
     private final VBox currencyMenu = new VBox(4);
-    private Segmented rolePills;
-    private UiRole role;
+    private final Timeline badgeTimer;
+    private final AppContext app = AppContext.get();
 
-    public AppShell(Runnable onLogout) {
+    private User user;
+    private final UiRole role;
+
+    public AppShell(User user, Runnable onLogout) {
+        this.user = user;
+        this.role = UiRole.of(user.getRole());
+
         HBox base = new HBox(18);
         base.setPadding(new Insets(18));
         VBox main = buildMain();
         HBox.setHgrow(main, Priority.ALWAYS);
-        base.getChildren().addAll(buildSidebar(onLogout), main);
+        base.getChildren().addAll(buildSidebar(() -> {
+            dispose();
+            onLogout.run();
+        }), main);
         getChildren().add(base);
 
         buildCurrencyOverlay();
         CurrencyState.currentProperty().addListener((obs, was, now) -> refreshCurrencyLabel());
         refreshCurrencyLabel();
 
-        selectRole(UiRole.WORKER);
+        getStyleClass().add(role.cssClass());
+        showUser();
+        buildNav();
+        selectPage(role.nav().get(0));
+        refreshNotifications();
+
+        badgeTimer = new Timeline(new KeyFrame(Duration.seconds(20), e -> refreshNotifications()));
+        badgeTimer.setCycleCount(Timeline.INDEFINITE);
+        badgeTimer.play();
+    }
+
+    /** Stops the background refresh (called on logout). */
+    public void dispose() {
+        badgeTimer.stop();
+    }
+
+    // ------------------------------------------------------------ PageNavigator
+
+    @Override
+    public void open(NavItem item) {
+        if (role.nav().contains(item)) {
+            selectPage(item);
+        } else {
+            openHeaderPage(item);
+        }
+    }
+
+    @Override
+    public NavItem find(String title) {
+        return role.nav().stream().filter(n -> n.title().equals(title)).findFirst().orElse(null);
+    }
+
+    @Override
+    public void refreshNotifications() {
+        Outcome<Integer> unread = app.notifications().unreadCount(user.getUserId());
+        int count = unread.isOk() && unread.value() != null ? unread.value() : 0;
+        badgeCount.setText(count > 99 ? "99+" : String.valueOf(count));
+        badge.setVisible(count > 0);
+        badge.setManaged(count > 0);
+    }
+
+    @Override
+    public void userUpdated(User updated) {
+        this.user = updated;
+        showUser();
     }
 
     // ------------------------------------------------------------ sidebar
@@ -61,14 +121,13 @@ public class AppShell extends StackPane {
         side.setMaxWidth(256);
         side.setPadding(new Insets(22, 16, 18, 16));
 
-        Label f = new Label("F");
-        StackPane badge = new StackPane(f);
-        badge.getStyleClass().add("logo-badge");
-        badge.setPrefSize(42, 42);
-        badge.setMinSize(42, 42);
-        badge.setMaxSize(42, 42);
+        StackPane badgeLogo = new StackPane(new Label("F"));
+        badgeLogo.getStyleClass().add("logo-badge");
+        badgeLogo.setPrefSize(42, 42);
+        badgeLogo.setMinSize(42, 42);
+        badgeLogo.setMaxSize(42, 42);
         VBox words = new VBox(0, Widgets.label("FairGig", "h-logo"), Widgets.caps("Earnings, verified"));
-        HBox logo = new HBox(12, badge, words);
+        HBox logo = new HBox(12, badgeLogo, words);
         logo.setAlignment(Pos.CENTER_LEFT);
         logo.setPadding(new Insets(0, 0, 6, 6));
 
@@ -106,12 +165,10 @@ public class AppShell extends StackPane {
         VBox crumb = new VBox(2, crumbRole, crumbPage);
         crumb.setMinWidth(150);
 
-        rolePills = new Segmented(
-            List.of("Worker", "Representative", "Advocate"),
-            List.of("person", "check", "shield"),
-            List.of("pill-worker", "pill-rep", "pill-advocate"),
-            false,
-            i -> selectRole(UiRole.values()[i]));
+        // the logged-in user's role (a badge, not a switch: the role comes from the account)
+        HBox roleBadge = new HBox(8, Icons.of(role.icon(), 16, "icon-white"), Widgets.label(role.label(), "chip-label"));
+        roleBadge.getStyleClass().addAll("pill-static", role.pillClass());
+        roleBadge.setAlignment(Pos.CENTER);
 
         HBox currencyBtn = new HBox(8, Icons.of("money", 16), currencyLabel, Icons.of("chevron", 18));
         currencyBtn.getStyleClass().add("chip-btn");
@@ -125,13 +182,11 @@ public class AppShell extends StackPane {
         bell.setMinSize(44, 44);
         bell.setMaxSize(44, 44);
         bell.setStyle("-fx-cursor: hand;");
-        Region dot = new Region();
-        dot.getStyleClass().add("bell-dot");
-        dot.setPrefSize(10, 10);
-        dot.setMaxSize(10, 10);
-        StackPane.setAlignment(dot, Pos.TOP_RIGHT);
-        StackPane.setMargin(dot, new Insets(9, 10, 0, 0));
-        bell.getChildren().add(dot);
+        badge.getStyleClass().add("badge");
+        badge.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
+        StackPane.setAlignment(badge, Pos.TOP_RIGHT);
+        StackPane.setMargin(badge, new Insets(-2, -4, 0, 0));
+        bell.getChildren().add(badge);
         bell.setOnMouseClicked(e -> openHeaderPage(NavItem.NOTIFICATIONS));
         Anim.pressable(bell);
 
@@ -146,14 +201,12 @@ public class AppShell extends StackPane {
         miniAvatar.setOnMouseClicked(e -> openHeaderPage(NavItem.PROFILE));
         Anim.pressable(miniAvatar);
 
-        header.getChildren().addAll(crumb, Widgets.spacer(), rolePills, Widgets.spacer(),
+        header.getChildren().addAll(crumb, Widgets.spacer(), roleBadge, Widgets.spacer(),
             currencyBtn, new ThemeSwitch(), bell, miniAvatar);
 
         contentHost.setAlignment(Pos.TOP_LEFT);
         VBox.setVgrow(contentHost, Priority.ALWAYS);
-
-        VBox main = new VBox(18, header, contentHost);
-        return main;
+        return new VBox(18, header, contentHost);
     }
 
     // ------------------------------------------------------------ currency dropdown
@@ -188,8 +241,7 @@ public class AppShell extends StackPane {
             }
             Label code = Widgets.label(opt.code() + "  " + opt.symbol(), "chip-label");
             code.setStyle("-fx-text-fill: -text;");
-            Label name = Widgets.label(opt.name(), "h-sub");
-            row.getChildren().addAll(code, Widgets.spacer(), name);
+            row.getChildren().addAll(code, Widgets.spacer(), Widgets.label(opt.name(), "h-sub"));
             if (current) {
                 row.getChildren().add(Icons.of("check", 16, "icon-accent"));
             }
@@ -221,26 +273,26 @@ public class AppShell extends StackPane {
 
     // ------------------------------------------------------------ navigation
 
-    private void selectRole(UiRole newRole) {
-        this.role = newRole;
-        getStyleClass().removeAll("role-worker", "role-rep", "role-advocate");
-        getStyleClass().add(newRole.cssClass());
-        rolePills.select(newRole.ordinal(), false);
+    private void showUser() {
+        String name = user.getName() == null ? "" : user.getName().trim();
+        String[] parts = name.isEmpty() ? new String[0] : name.split("\\s+");
+        String initials = parts.length == 0 ? "?"
+            : (parts.length == 1 ? parts[0].substring(0, 1) : parts[0].substring(0, 1) + parts[parts.length - 1].substring(0, 1));
+        avatarText.setText(initials.toUpperCase());
+        userName.setText(name);
+        userRole.setText(role.label());
+    }
 
-        avatarText.setText(newRole.initials());
-        userName.setText(newRole.userName());
-        userRole.setText(newRole.label());
-
+    private void buildNav() {
         navBox.getChildren().clear();
         navNodes.clear();
         int i = 0;
-        for (NavItem item : newRole.nav()) {
+        for (NavItem item : role.nav()) {
             HBox node = navNode(item);
             navNodes.put(item, node);
             navBox.getChildren().add(node);
             Anim.fadeSlideIn(node, 10, 260, 40 * i++);
         }
-        selectPage(newRole.nav().get(0));
     }
 
     private HBox navNode(NavItem item) {
@@ -270,7 +322,8 @@ public class AppShell extends StackPane {
     private void showPage(NavItem item) {
         crumbRole.setText(role.label().toUpperCase());
         crumbPage.setText(item.title());
-        Node page = PageFactory.create(role, item);
+        Node page = PageFactory.create(new PageContext(user, role, app, this), item);
         contentHost.getChildren().setAll(page);
+        refreshNotifications();
     }
 }

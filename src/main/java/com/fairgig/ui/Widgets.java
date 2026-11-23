@@ -151,6 +151,40 @@ public final class Widgets {
         return tile;
     }
 
+    /** Finds the text box inside a container built by {@link #field}. */
+    public static TextInputControl input(Node root) {
+        if (root instanceof TextInputControl text) {
+            return text;
+        }
+        if (root instanceof javafx.scene.Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                TextInputControl found = input(child);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
+    }
+
+    /** Like {@link #statTile} but without the decorative meter: for real numbers. */
+    public static VBox infoTile(String icon, String tint, String label, ObservableValue<String> value, String note) {
+        VBox tile = new VBox(10);
+        tile.getStyleClass().add("clay-card");
+        tile.setPadding(new Insets(18, 20, 18, 20));
+        tile.setMinWidth(190);
+
+        StackPane chip = new StackPane(Icons.of(icon, 20, "icon-" + tint));
+        chip.getStyleClass().addAll("tile-chip", "tint-" + tint);
+        HBox top = new HBox(caps(label), spacer(), chip);
+        top.setAlignment(Pos.CENTER_LEFT);
+
+        Label figure = label("", "big-value");
+        figure.textProperty().bind(value);
+        tile.getChildren().addAll(top, figure, label(note, "h-sub"));
+        return tile;
+    }
+
     /** Wraps any node in a clay card. */
     public static VBox card(double spacing, Node... children) {
         VBox card = new VBox(spacing, children);

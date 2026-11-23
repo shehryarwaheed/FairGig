@@ -1,5 +1,7 @@
 package com.fairgig.ui;
 
+import com.fairgig.controller.AppContext;
+import com.fairgig.model.User;
 import com.fairgig.ui.auth.LoginView;
 import javafx.scene.Node;
 import javafx.scene.layout.StackPane;
@@ -17,8 +19,12 @@ public class Navigator {
         show(new LoginView(this::showShell));
     }
 
-    public void showShell() {
-        show(new AppShell(this::showLogin));
+    /** Opens the app for the user who just logged in. Logging out goes back to the login screen. */
+    public void showShell(User user) {
+        show(new AppShell(user, () -> {
+            AppContext.get().auth().logout();
+            showLogin();
+        }));
     }
 
     private void show(Node screen) {

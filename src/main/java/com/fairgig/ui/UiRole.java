@@ -36,6 +36,15 @@ public enum UiRole {
         this.tiles = tiles;
     }
 
+    /** The screen role that belongs to an account's role. */
+    public static UiRole of(com.fairgig.model.Role role) {
+        return switch (role) {
+            case WORKER -> WORKER;
+            case VERIFIER -> REPRESENTATIVE;
+            case ADVOCATE -> ADVOCATE;
+        };
+    }
+
     public String label() { return label; }
     public String cssClass() { return cssClass; }
     public String pillClass() { return pillClass; }

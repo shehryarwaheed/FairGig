@@ -8,15 +8,22 @@ import java.util.List;
 /** Tabs and home tiles of the Worker role (prototype: titles only, no content yet). */
 public final class WorkerPages {
 
+    // Tab titles (the page router in ui.PageFactory matches on these)
+    public static final String HOME = "Home";
+    public static final String PLATFORMS = "Platforms";
+    public static final String EARNINGS = "Earnings";
+    public static final String IMPORT_CSV = "Import CSV";
+    public static final String EVIDENCE = "Evidence";
+
     private WorkerPages() {}
 
     public static List<NavItem> nav() {
         return List.of(
-            new NavItem("Home", "Your earnings at a glance.", "home", true),
-            new NavItem("Platforms", "Register and manage the platforms you work on.", "layers", false),
-            new NavItem("Earnings", "Log earnings and review your history and verification status.", "money", false),
-            new NavItem("Import CSV", "Bring many earnings in at once and fix invalid rows.", "upload", false),
-            new NavItem("Evidence", "Upload screenshots or statements to back up your earnings.", "doc", false),
+            new NavItem(HOME, "Your earnings at a glance.", "home", true),
+            new NavItem(PLATFORMS, "Register and manage the platforms you work on.", "layers", false),
+            new NavItem(EARNINGS, "Log an earning and see your latest entries.", "money", false),
+            new NavItem(IMPORT_CSV, "Bring many earnings in at once and fix invalid rows.", "upload", false),
+            new NavItem(EVIDENCE, "Upload screenshots or statements to back up your earnings.", "doc", false),
             new NavItem("Analytics", "Income, deductions, trends and the city-wide median.", "chart", false),
             new NavItem("Reports", "Monthly and yearly reports and your income certificate.", "trend", false),
             new NavItem("Complaints", "File a complaint and track its progress.", "flag", false),
