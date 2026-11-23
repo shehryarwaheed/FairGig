@@ -47,7 +47,23 @@ A Verified record can never go back to Pending.
 1. **Create the database.** In pgAdmin, create an empty database named `fairgig_db`.
 2. **Create your settings file.** Copy `.env.example` to a new file called `.env` and put your own PostgreSQL password in it.
    `.env` is git-ignored, so your password never leaves your computer.
-3. **Open the project.** In IntelliJ choose *File > Open* and select `pom.xml`. Let it import the Maven project.
+3. **Create the tables and sample data.** In pgAdmin open a Query Tool on `fairgig_db` and run, in this order:
+   `src/main/resources/sql/schema.sql` (the 24 tables), then `src/main/resources/sql/seed.sql` (fake sample data).
+   Run each file **once**, on an empty database.
+4. **Open the project.** In IntelliJ choose *File > Open* and select `pom.xml`. Let it import the Maven project.
+5. **Check the connection (optional).** Run `src/main/java/com/fairgig/database/ConnectionCheck.java`.
+   It should say `Connection OK` and `Tables found: 24`.
+
+## Sample accounts (fake data, password for all: `Test@1234`)
+
+| Role | Name | Email |
+|---|---|---|
+| Worker | Ali Raza | `worker1@fairgig.test` |
+| Worker | Sara Khan | `worker2@fairgig.test` |
+| Worker | Bilal Ahmed | `worker3@fairgig.test` |
+| Representative (Uber) | Hina Malik | `rep.uber@fairgig.test` |
+| Representative (Foodpanda) | Omar Siddiqui | `rep.foodpanda@fairgig.test` |
+| Advocate | Maryam Tariq | `advocate@fairgig.test` |
 
 ## Run it
 
