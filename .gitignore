@@ -1,0 +1,30 @@
+# Secrets (never commit!)
+.env
+
+# Build output
+target/
+
+# Uploaded evidence files (keep the folder, ignore its content)
+uploads/*
+!uploads/.gitkeep
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Claude helper context (personal, optional to share)
+claude.md
+
+# Local tools and personal rules
+tools/
+rule.md
+
+design-refs/
