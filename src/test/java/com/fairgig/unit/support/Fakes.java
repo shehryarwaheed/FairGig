@@ -204,6 +204,37 @@ public final class Fakes {
         }
     }
 
+    // ---------------------------------------------------------------- commission rates
+
+    public static class FakeCommissionRates implements com.fairgig.repository.CommissionRateRepository {
+        public final List<com.fairgig.model.CommissionRate> saved = new ArrayList<>();
+
+        public FakeCommissionRates with(int platformId, String percent, java.time.LocalDate from) {
+            com.fairgig.model.CommissionRate r = new com.fairgig.model.CommissionRate();
+            r.setPlatformId(platformId);
+            r.setRecordedByRepId(10);
+            r.setRatePercent(new java.math.BigDecimal(percent));
+            r.setEffectiveDate(from);
+            save(r);
+            return this;
+        }
+
+        @Override
+        public com.fairgig.model.CommissionRate save(com.fairgig.model.CommissionRate rate) {
+            rate.setRateId(saved.size() + 1);
+            saved.add(rate);
+            return rate;
+        }
+
+        @Override
+        public List<com.fairgig.model.CommissionRate> findByPlatform(int platformId) {
+            return saved.stream().filter(r -> r.getPlatformId() == platformId)
+                .sorted(Comparator.comparing(com.fairgig.model.CommissionRate::getEffectiveDate)
+                    .thenComparing(com.fairgig.model.CommissionRate::getRateId))
+                .toList();
+        }
+    }
+
     // ---------------------------------------------------------------- file storage
 
     /** Keeps "files" in memory and remembers which were removed again. */

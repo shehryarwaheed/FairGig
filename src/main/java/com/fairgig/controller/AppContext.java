@@ -2,6 +2,7 @@ package com.fairgig.controller;
 
 import com.fairgig.database.DatabaseConnection;
 import com.fairgig.proxy.AccessProxy;
+import com.fairgig.repository.CommissionRateRepository;
 import com.fairgig.repository.CsvImportRepository;
 import com.fairgig.repository.EarningsRepository;
 import com.fairgig.repository.EvidenceRepository;
@@ -10,6 +11,7 @@ import com.fairgig.repository.PlatformRepository;
 import com.fairgig.repository.ReviewRepository;
 import com.fairgig.repository.UserRepository;
 import com.fairgig.repository.WorkerPlatformRepository;
+import com.fairgig.repository.jdbc.JdbcCommissionRateRepository;
 import com.fairgig.repository.jdbc.JdbcCsvImportRepository;
 import com.fairgig.repository.jdbc.JdbcEarningsRepository;
 import com.fairgig.repository.jdbc.JdbcEvidenceRepository;
@@ -20,6 +22,8 @@ import com.fairgig.repository.jdbc.JdbcUserRepository;
 import com.fairgig.repository.jdbc.JdbcWorkerPlatformRepository;
 import com.fairgig.service.auth.AuthService;
 import com.fairgig.service.auth.DefaultAuthService;
+import com.fairgig.service.commission.CommissionService;
+import com.fairgig.service.commission.DefaultCommissionService;
 import com.fairgig.service.csv.CsvImportService;
 import com.fairgig.service.csv.DefaultCsvImportService;
 import com.fairgig.service.earnings.DefaultEarningsHistoryService;
@@ -59,6 +63,7 @@ public final class AppContext {
     private final CsvImportRepository csvImportRepository = new JdbcCsvImportRepository();
     private final NotificationRepository notificationRepository = new JdbcNotificationRepository();
     private final ReviewRepository reviewRepository = new JdbcReviewRepository();
+    private final CommissionRateRepository commissionRateRepository = new JdbcCommissionRateRepository();
     private final EvidenceStorage storage = LocalEvidenceStorage.fromEnv();
 
     // ---- internal helpers (not proxied: only trusted service code uses them)
@@ -75,6 +80,7 @@ public final class AppContext {
     private final NotificationService notifications;
     private final VerificationService verification;
     private final EarningsHistoryService history;
+    private final CommissionService commission;
 
     // ---- controllers (what the screens use)
     private final AuthController authController;
@@ -82,6 +88,7 @@ public final class AppContext {
     private final NotificationController notificationController;
     private final VerificationController verificationController;
     private final EarningsHistoryController historyController;
+    private final CommissionController commissionController;
 
     private AppContext() {
         auth = AccessProxy.wrap(AuthService.class, new DefaultAuthService(users, platformRepository));
@@ -112,6 +119,11 @@ public final class AppContext {
         history = AccessProxy.wrap(EarningsHistoryService.class,
             new DefaultEarningsHistoryService(earningsRepository, reviewRepository, platformRepository));
         historyController = new EarningsHistoryController(history);
+
+        // commission rates and their history (FR-26, FR-27)
+        commission = AccessProxy.wrap(CommissionService.class,
+            new DefaultCommissionService(commissionRateRepository, platformRepository));
+        commissionController = new CommissionController(commission);
     }
 
     /** The shared instance (created on first use). */
@@ -145,6 +157,10 @@ public final class AppContext {
 
     public EarningsHistoryController history() {
         return historyController;
+    }
+
+    public CommissionController commission() {
+        return commissionController;
     }
 
     /** For other services that need to send notifications (FR-41). Internal use only. */
