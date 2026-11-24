@@ -1,5 +1,6 @@
 package com.fairgig.ui;
 
+import com.fairgig.ui.verifier.VerifierCommissionPage;
 import com.fairgig.ui.verifier.VerifierHistoryPage;
 import com.fairgig.ui.verifier.VerifierHomePage;
 import com.fairgig.ui.verifier.VerifierPages;
@@ -67,7 +68,10 @@ public final class PageFactory {
                     case VerifierPages.REVIEW_HISTORY -> {
                         return new VerifierHistoryPage(ctx).build();
                     }
-                    default -> { /* commission and complaints: placeholders for now */ }
+                    case VerifierPages.COMMISSION_RATES -> {
+                        return new VerifierCommissionPage(ctx).build();
+                    }
+                    default -> { /* complaints: placeholder for now */ }
                 }
             }
             case ADVOCATE -> { /* complaints, moderation, analytics: placeholders for now */ }
