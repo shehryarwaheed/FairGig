@@ -7,6 +7,7 @@ import com.fairgig.repository.EarningsRepository;
 import com.fairgig.repository.EvidenceRepository;
 import com.fairgig.repository.NotificationRepository;
 import com.fairgig.repository.PlatformRepository;
+import com.fairgig.repository.ReviewRepository;
 import com.fairgig.repository.UserRepository;
 import com.fairgig.repository.WorkerPlatformRepository;
 import com.fairgig.repository.jdbc.JdbcCsvImportRepository;
@@ -14,6 +15,7 @@ import com.fairgig.repository.jdbc.JdbcEarningsRepository;
 import com.fairgig.repository.jdbc.JdbcEvidenceRepository;
 import com.fairgig.repository.jdbc.JdbcNotificationRepository;
 import com.fairgig.repository.jdbc.JdbcPlatformRepository;
+import com.fairgig.repository.jdbc.JdbcReviewRepository;
 import com.fairgig.repository.jdbc.JdbcUserRepository;
 import com.fairgig.repository.jdbc.JdbcWorkerPlatformRepository;
 import com.fairgig.service.auth.AuthService;
@@ -29,6 +31,8 @@ import com.fairgig.service.notification.NotificationSender;
 import com.fairgig.service.notification.NotificationService;
 import com.fairgig.service.platform.DefaultPlatformService;
 import com.fairgig.service.platform.PlatformService;
+import com.fairgig.service.verification.DefaultVerificationService;
+import com.fairgig.service.verification.VerificationService;
 import com.fairgig.storage.EvidenceStorage;
 import com.fairgig.storage.LocalEvidenceStorage;
 
@@ -52,6 +56,7 @@ public final class AppContext {
     private final EvidenceRepository evidenceRepository = new JdbcEvidenceRepository();
     private final CsvImportRepository csvImportRepository = new JdbcCsvImportRepository();
     private final NotificationRepository notificationRepository = new JdbcNotificationRepository();
+    private final ReviewRepository reviewRepository = new JdbcReviewRepository();
     private final EvidenceStorage storage = LocalEvidenceStorage.fromEnv();
 
     // ---- internal helpers (not proxied: only trusted service code uses them)
@@ -66,11 +71,13 @@ public final class AppContext {
     private final CsvImportService csv;
     private final EvidenceService evidence;
     private final NotificationService notifications;
+    private final VerificationService verification;
 
     // ---- controllers (what the screens use)
     private final AuthController authController;
     private final WorkerController workerController;
     private final NotificationController notificationController;
+    private final VerificationController verificationController;
 
     private AppContext() {
         auth = AccessProxy.wrap(AuthService.class, new DefaultAuthService(users, platformRepository));
@@ -90,6 +97,12 @@ public final class AppContext {
         notificationController = new NotificationController(notifications);
 
         // ===== Add the verification / complaints / community / analytics features below =====
+
+        // verification (FR-18 to FR-21)
+        verification = AccessProxy.wrap(VerificationService.class,
+            new DefaultVerificationService(earningsRepository, reviewRepository, evidenceRepository, users,
+                platformRepository, notificationSender));
+        verificationController = new VerificationController(verification);
     }
 
     /** The shared instance (created on first use). */
@@ -115,6 +128,10 @@ public final class AppContext {
 
     public NotificationController notifications() {
         return notificationController;
+    }
+
+    public VerificationController verification() {
+        return verificationController;
     }
 
     /** For other services that need to send notifications (FR-41). Internal use only. */

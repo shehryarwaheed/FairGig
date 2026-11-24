@@ -1,0 +1,319 @@
+package com.fairgig.unit.support;
+
+import com.fairgig.model.EarningsRecord;
+import com.fairgig.model.Evidence;
+import com.fairgig.model.Platform;
+import com.fairgig.model.PlatformRepresentative;
+import com.fairgig.model.Role;
+import com.fairgig.model.User;
+import com.fairgig.model.VerificationReview;
+import com.fairgig.model.VerificationStatus;
+import com.fairgig.model.Worker;
+import com.fairgig.repository.EarningsFilter;
+import com.fairgig.repository.EarningsRepository;
+import com.fairgig.repository.EvidenceRepository;
+import com.fairgig.repository.PlatformRepository;
+import com.fairgig.repository.ReviewRepository;
+import com.fairgig.repository.UserRepository;
+import com.fairgig.service.notification.NotificationSender;
+import java.sql.Connection;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+/**
+ * In-memory stand-ins for the repositories, so services can be unit-tested without PostgreSQL.
+ * (This is the benefit of the REPOSITORY pattern: services only know the interfaces.)
+ */
+public final class Fakes {
+
+    private Fakes() {}
+
+    public static Worker worker(int id, String name) {
+        Worker w = new Worker();
+        w.setUserId(id);
+        w.setName(name);
+        return w;
+    }
+
+    public static PlatformRepresentative representative(int id, String name, int platformId) {
+        PlatformRepresentative r = new PlatformRepresentative();
+        r.setUserId(id);
+        r.setName(name);
+        r.setPlatformId(platformId);
+        return r;
+    }
+
+    public static EarningsRecord earning(int id, int workerId, int platformId, VerificationStatus status) {
+        EarningsRecord e = new EarningsRecord();
+        e.setRecordId(id);
+        e.setWorkerId(workerId);
+        e.setPlatformId(platformId);
+        e.setShiftDate(java.time.LocalDate.of(2026, 11, 10));
+        e.setStatus(status);
+        e.setCreatedAt(LocalDateTime.of(2026, 11, 10, 18, 0).plusMinutes(id));
+        return e;
+    }
+
+    // ---------------------------------------------------------------- earnings
+
+    public static class FakeEarnings implements EarningsRepository {
+        public final Map<Integer, EarningsRecord> records = new LinkedHashMap<>();
+
+        public FakeEarnings with(EarningsRecord... items) {
+            for (EarningsRecord item : items) {
+                records.put(item.getRecordId(), item);
+            }
+            return this;
+        }
+
+        @Override
+        public EarningsRecord save(EarningsRecord record) {
+            records.put(record.getRecordId(), record);
+            return record;
+        }
+
+        @Override
+        public EarningsRecord save(Connection connection, EarningsRecord record) {
+            return save(record);
+        }
+
+        @Override
+        public Optional<EarningsRecord> findById(int recordId) {
+            return Optional.ofNullable(records.get(recordId));
+        }
+
+        @Override
+        public List<EarningsRecord> findByWorker(int workerId, EarningsFilter filter) {
+            return records.values().stream().filter(r -> r.getWorkerId() == workerId).toList();
+        }
+
+        @Override
+        public List<EarningsRecord> findPendingByPlatform(int platformId) {
+            return records.values().stream()
+                .filter(r -> r.getPlatformId() == platformId && r.getStatus() == VerificationStatus.PENDING)
+                .sorted(Comparator.comparing(EarningsRecord::getCreatedAt))
+                .toList();
+        }
+
+        @Override
+        public boolean updateStatus(Connection connection, int recordId,
+                                    VerificationStatus expected, VerificationStatus newStatus) {
+            EarningsRecord record = records.get(recordId);
+            if (record == null || record.getStatus() != expected) {
+                return false;
+            }
+            record.setStatus(newStatus);
+            return true;
+        }
+    }
+
+    // ---------------------------------------------------------------- reviews
+
+    public static class FakeReviews implements ReviewRepository {
+        public final List<VerificationReview> saved = new ArrayList<>();
+        private final FakeEarnings earnings;
+        private int nextId = 1;
+
+        public FakeReviews(FakeEarnings earnings) {
+            this.earnings = earnings;
+        }
+
+        @Override
+        public VerificationReview save(VerificationReview review) {
+            review.setReviewId(nextId++);
+            review.setReviewedAt(LocalDateTime.of(2026, 11, 24, 12, 0).plusMinutes(review.getReviewId()));
+            saved.add(review);
+            return review;
+        }
+
+        @Override
+        public VerificationReview save(Connection connection, VerificationReview review) {
+            return save(review);
+        }
+
+        @Override
+        public List<VerificationReview> findByRecord(int recordId) {
+            return saved.stream().filter(r -> r.getRecordId() == recordId).toList();
+        }
+
+        @Override
+        public List<VerificationReview> findByRepresentative(int representativeId) {
+            return saved.stream().filter(r -> r.getRepresentativeId() == representativeId).toList();
+        }
+
+        @Override
+        public List<VerificationReview> findByPlatform(int platformId) {
+            return saved.stream()
+                .filter(r -> earnings.records.get(r.getRecordId()).getPlatformId() == platformId)
+                .sorted(Comparator.comparing(VerificationReview::getReviewedAt).reversed())
+                .toList();
+        }
+    }
+
+    // ---------------------------------------------------------------- evidence
+
+    public static class FakeEvidence implements EvidenceRepository {
+        public final List<Evidence> saved = new ArrayList<>();
+
+        @Override
+        public Evidence save(Evidence evidence) {
+            evidence.setEvidenceId(saved.size() + 1);
+            saved.add(evidence);
+            return evidence;
+        }
+
+        @Override
+        public Evidence save(Connection connection, Evidence evidence) {
+            return save(evidence);
+        }
+
+        @Override
+        public Optional<Evidence> findById(int evidenceId) {
+            return saved.stream().filter(e -> e.getEvidenceId() == evidenceId).findFirst();
+        }
+
+        @Override
+        public List<Evidence> findByRecord(int recordId) {
+            return saved.stream().filter(e -> e.getRecordId() == recordId).toList();
+        }
+    }
+
+    // ---------------------------------------------------------------- users and platforms
+
+    public static class FakeUsers implements UserRepository {
+        public final Map<Integer, User> users = new LinkedHashMap<>();
+
+        public FakeUsers with(User... items) {
+            for (User item : items) {
+                users.put(item.getUserId(), item);
+            }
+            return this;
+        }
+
+        @Override
+        public Optional<User> findById(int userId) {
+            return Optional.ofNullable(users.get(userId));
+        }
+
+        @Override
+        public User save(User user) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Optional<User> findByEmail(String email) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean emailExists(String email) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Optional<Worker> findWorkerById(int userId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public List<PlatformRepresentative> findRepresentativesByPlatform(int platformId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public List<User> findByRole(Role role) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void updateProfile(User user) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void updatePasswordHash(int userId, String newPasswordHash) {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    public static class FakePlatforms implements PlatformRepository {
+        public final Map<Integer, Platform> platforms = new LinkedHashMap<>();
+
+        public FakePlatforms with(int id, String name) {
+            Platform p = new Platform(name, "Ride-hailing");
+            p.setPlatformId(id);
+            platforms.put(id, p);
+            return this;
+        }
+
+        @Override
+        public Optional<Platform> findById(int platformId) {
+            return Optional.ofNullable(platforms.get(platformId));
+        }
+
+        @Override
+        public Platform save(Platform platform) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Optional<Platform> findByName(String name) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public List<Platform> findAll() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public List<Platform> findAllActive() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void update(Platform platform) {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    // ---------------------------------------------------------------- notifications
+
+    /** Remembers every notification instead of saving it. */
+    public static class RecordingSender implements NotificationSender {
+
+        public record Sent(int userId, String message) { }
+
+        public final List<Sent> sent = new ArrayList<>();
+
+        @Override
+        public void notifyUser(int userId, String message) {
+            sent.add(new Sent(userId, message));
+        }
+
+        @Override
+        public void notifyUser(Connection connection, int userId, String message) {
+            notifyUser(userId, message);
+        }
+
+        @Override
+        public int notifyPlatformRepresentatives(int platformId, String message) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int notifyPlatformRepresentatives(Connection connection, int platformId, String message) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int notifyAdvocates(String message) {
+            throw new UnsupportedOperationException();
+        }
+    }
+}
