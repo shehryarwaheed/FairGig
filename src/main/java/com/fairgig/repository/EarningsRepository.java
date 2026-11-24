@@ -1,6 +1,7 @@
 package com.fairgig.repository;
 
 import com.fairgig.model.EarningsRecord;
+import com.fairgig.model.VerificationStatus;
 import java.sql.Connection;
 import java.util.List;
 import java.util.Optional;
@@ -22,4 +23,15 @@ public interface EarningsRepository {
 
     /** A worker's earnings, newest shift first, narrowed by the filter (use EarningsFilter.none() for all). */
     List<EarningsRecord> findByWorker(int workerId, EarningsFilter filter);
+
+    /** Earnings of one platform that are still PENDING, oldest first (the representative's queue, FR-18). */
+    List<EarningsRecord> findPendingByPlatform(int platformId);
+
+    /**
+     * Changes the status of an earning ONLY if it still has the status the caller saw
+     * ({@code expected}). Returns false when someone else changed it first, so two reviewers can
+     * never both decide the same earning. Runs inside the caller's transaction (FR-22, NFR-06).
+     */
+    boolean updateStatus(Connection connection, int recordId,
+                         VerificationStatus expected, VerificationStatus newStatus);
 }

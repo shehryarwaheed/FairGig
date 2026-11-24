@@ -94,6 +94,30 @@ public class JdbcEarningsRepository implements EarningsRepository {
         }, JdbcEarningsRepository::map);
     }
 
+    @Override
+    public List<EarningsRecord> findPendingByPlatform(int platformId) {
+        return Jdbc.queryList(
+            SELECT + "WHERE platform_id = ? AND status = ? ORDER BY created_at ASC, record_id ASC",
+            ps -> {
+                ps.setInt(1, platformId);
+                ps.setString(2, VerificationStatus.PENDING.name());
+            },
+            JdbcEarningsRepository::map);
+    }
+
+    @Override
+    public boolean updateStatus(Connection connection, int recordId,
+                                VerificationStatus expected, VerificationStatus newStatus) {
+        int changed = Jdbc.update(connection,
+            "UPDATE earnings_records SET status = ? WHERE record_id = ? AND status = ?",
+            ps -> {
+                ps.setString(1, newStatus.name());
+                ps.setInt(2, recordId);
+                ps.setString(3, expected.name());
+            });
+        return changed == 1;
+    }
+
     private static EarningsRecord map(ResultSet rs) throws SQLException {
         EarningsRecord r = new EarningsRecord();
         r.setRecordId(rs.getInt("record_id"));
