@@ -33,6 +33,16 @@ public final class Fakes {
 
     private Fakes() {}
 
+    /** A "transaction" that just runs the work, so no database is needed. */
+    public static com.fairgig.database.Transactions noDatabase() {
+        return new com.fairgig.database.Transactions() {
+            @Override
+            public <T> T run(com.fairgig.database.TransactionManager.Work<T> work) throws java.sql.SQLException {
+                return work.execute(null);
+            }
+        };
+    }
+
     public static Worker worker(int id, String name) {
         Worker w = new Worker();
         w.setUserId(id);
@@ -89,7 +99,16 @@ public final class Fakes {
 
         @Override
         public List<EarningsRecord> findByWorker(int workerId, EarningsFilter filter) {
-            return records.values().stream().filter(r -> r.getWorkerId() == workerId).toList();
+            EarningsFilter f = filter == null ? EarningsFilter.none() : filter;
+            return records.values().stream()
+                .filter(r -> r.getWorkerId() == workerId)
+                .filter(r -> f.platformId() == null || r.getPlatformId().equals(f.platformId()))
+                .filter(r -> f.from() == null || !r.getShiftDate().isBefore(f.from()))
+                .filter(r -> f.to() == null || !r.getShiftDate().isAfter(f.to()))
+                .filter(r -> f.status() == null || r.getStatus() == f.status())
+                .sorted(Comparator.comparing(EarningsRecord::getShiftDate).reversed()
+                    .thenComparing(Comparator.comparing(EarningsRecord::getRecordId).reversed()))
+                .toList();
         }
 
         @Override
@@ -138,7 +157,9 @@ public final class Fakes {
 
         @Override
         public List<VerificationReview> findByRecord(int recordId) {
-            return saved.stream().filter(r -> r.getRecordId() == recordId).toList();
+            return saved.stream().filter(r -> r.getRecordId() == recordId)
+                .sorted(Comparator.comparing(VerificationReview::getReviewedAt).reversed())
+                .toList();                                   // newest first, like the real repository
         }
 
         @Override
@@ -180,6 +201,32 @@ public final class Fakes {
         @Override
         public List<Evidence> findByRecord(int recordId) {
             return saved.stream().filter(e -> e.getRecordId() == recordId).toList();
+        }
+    }
+
+    // ---------------------------------------------------------------- file storage
+
+    /** Keeps "files" in memory and remembers which were removed again. */
+    public static class FakeStorage implements com.fairgig.storage.EvidenceStorage {
+        public final Map<String, byte[]> files = new LinkedHashMap<>();
+        public final List<String> deleted = new ArrayList<>();
+
+        @Override
+        public String store(int recordId, com.fairgig.model.FileType type, byte[] content) {
+            String path = "record-" + recordId + "/file" + (files.size() + 1) + "." + type.name().toLowerCase();
+            files.put(path, content);
+            return path;
+        }
+
+        @Override
+        public byte[] read(String relativePath) {
+            return files.get(relativePath);
+        }
+
+        @Override
+        public void delete(String relativePath) {
+            files.remove(relativePath);
+            deleted.add(relativePath);
         }
     }
 
@@ -289,7 +336,10 @@ public final class Fakes {
 
         public record Sent(int userId, String message) { }
 
+        public record SentToPlatform(int platformId, String message) { }
+
         public final List<Sent> sent = new ArrayList<>();
+        public final List<SentToPlatform> sentToRepresentatives = new ArrayList<>();
 
         @Override
         public void notifyUser(int userId, String message) {
@@ -303,12 +353,13 @@ public final class Fakes {
 
         @Override
         public int notifyPlatformRepresentatives(int platformId, String message) {
-            throw new UnsupportedOperationException();
+            sentToRepresentatives.add(new SentToPlatform(platformId, message));
+            return 1;
         }
 
         @Override
         public int notifyPlatformRepresentatives(Connection connection, int platformId, String message) {
-            throw new UnsupportedOperationException();
+            return notifyPlatformRepresentatives(platformId, message);
         }
 
         @Override

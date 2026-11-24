@@ -1,6 +1,6 @@
 package com.fairgig.service.verification;
 
-import com.fairgig.database.TransactionManager;
+import com.fairgig.database.Transactions;
 import com.fairgig.model.EarningsRecord;
 import com.fairgig.model.ReviewDecision;
 import com.fairgig.model.User;
@@ -28,12 +28,6 @@ import java.util.Map;
 /** Real implementation of {@link VerificationService}. Wrap it with AccessProxy before giving it to screens. */
 public class DefaultVerificationService implements VerificationService {
 
-    /** Runs work as one transaction. Tests hand in a fake so no database is needed. */
-    @FunctionalInterface
-    public interface Transactions {
-        <T> T run(TransactionManager.Work<T> work) throws SQLException;
-    }
-
     private final EarningsRepository earnings;
     private final ReviewRepository reviews;
     private final EvidenceRepository evidence;
@@ -45,7 +39,7 @@ public class DefaultVerificationService implements VerificationService {
     public DefaultVerificationService(EarningsRepository earnings, ReviewRepository reviews,
                                       EvidenceRepository evidence, UserRepository users,
                                       PlatformRepository platforms, NotificationSender notifications) {
-        this(earnings, reviews, evidence, users, platforms, notifications, TransactionManager::inTransaction);
+        this(earnings, reviews, evidence, users, platforms, notifications, Transactions.standard());
     }
 
     public DefaultVerificationService(EarningsRepository earnings, ReviewRepository reviews,

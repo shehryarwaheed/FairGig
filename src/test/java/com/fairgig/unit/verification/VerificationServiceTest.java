@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.fairgig.database.Transactions;
 import com.fairgig.model.Evidence;
 import com.fairgig.model.FileType;
 import com.fairgig.model.ReviewDecision;
@@ -26,7 +27,6 @@ import com.fairgig.unit.support.Fakes.RecordingSender;
 import com.fairgig.util.AccessDeniedException;
 import com.fairgig.util.NotFoundException;
 import com.fairgig.util.ValidationException;
-import java.sql.SQLException;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -77,14 +77,8 @@ class VerificationServiceTest {
         Session.clear();
     }
 
-    /** A "transaction" that just runs the work, so no database is needed. */
-    private static DefaultVerificationService.Transactions noDatabase() {
-        return new DefaultVerificationService.Transactions() {
-            @Override
-            public <T> T run(com.fairgig.database.TransactionManager.Work<T> work) throws SQLException {
-                return work.execute(null);
-            }
-        };
+    private static Transactions noDatabase() {
+        return Fakes.noDatabase();
     }
 
     private void addEvidence(int recordId) {

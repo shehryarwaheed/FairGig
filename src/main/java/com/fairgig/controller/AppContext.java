@@ -22,7 +22,9 @@ import com.fairgig.service.auth.AuthService;
 import com.fairgig.service.auth.DefaultAuthService;
 import com.fairgig.service.csv.CsvImportService;
 import com.fairgig.service.csv.DefaultCsvImportService;
+import com.fairgig.service.earnings.DefaultEarningsHistoryService;
 import com.fairgig.service.earnings.DefaultEarningsService;
+import com.fairgig.service.earnings.EarningsHistoryService;
 import com.fairgig.service.earnings.EarningsService;
 import com.fairgig.service.evidence.DefaultEvidenceService;
 import com.fairgig.service.evidence.EvidenceService;
@@ -72,12 +74,14 @@ public final class AppContext {
     private final EvidenceService evidence;
     private final NotificationService notifications;
     private final VerificationService verification;
+    private final EarningsHistoryService history;
 
     // ---- controllers (what the screens use)
     private final AuthController authController;
     private final WorkerController workerController;
     private final NotificationController notificationController;
     private final VerificationController verificationController;
+    private final EarningsHistoryController historyController;
 
     private AppContext() {
         auth = AccessProxy.wrap(AuthService.class, new DefaultAuthService(users, platformRepository));
@@ -103,6 +107,11 @@ public final class AppContext {
             new DefaultVerificationService(earningsRepository, reviewRepository, evidenceRepository, users,
                 platformRepository, notificationSender));
         verificationController = new VerificationController(verification);
+
+        // worker earnings history with status and filters (FR-15, FR-16)
+        history = AccessProxy.wrap(EarningsHistoryService.class,
+            new DefaultEarningsHistoryService(earningsRepository, reviewRepository, platformRepository));
+        historyController = new EarningsHistoryController(history);
     }
 
     /** The shared instance (created on first use). */
@@ -132,6 +141,10 @@ public final class AppContext {
 
     public VerificationController verification() {
         return verificationController;
+    }
+
+    public EarningsHistoryController history() {
+        return historyController;
     }
 
     /** For other services that need to send notifications (FR-41). Internal use only. */

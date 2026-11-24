@@ -1,6 +1,6 @@
 package com.fairgig.service.evidence;
 
-import com.fairgig.database.TransactionManager;
+import com.fairgig.database.Transactions;
 import com.fairgig.model.EarningsRecord;
 import com.fairgig.model.Evidence;
 import com.fairgig.model.FileType;
@@ -14,6 +14,7 @@ import com.fairgig.repository.PlatformRepository;
 import com.fairgig.repository.UserRepository;
 import com.fairgig.service.notification.NotificationMessages;
 import com.fairgig.service.notification.NotificationSender;
+import com.fairgig.state.verification.VerificationStates;
 import com.fairgig.storage.EvidenceStorage;
 import com.fairgig.util.AccessDeniedException;
 import com.fairgig.util.DataAccessException;
@@ -31,16 +32,25 @@ public class DefaultEvidenceService implements EvidenceService {
     private final UserRepository users;
     private final EvidenceStorage storage;
     private final NotificationSender notifications;
+    private final Transactions transactions;
 
     public DefaultEvidenceService(EvidenceRepository evidenceRepository, EarningsRepository earnings,
                                   PlatformRepository platforms, UserRepository users,
                                   EvidenceStorage storage, NotificationSender notifications) {
+        this(evidenceRepository, earnings, platforms, users, storage, notifications, Transactions.standard());
+    }
+
+    public DefaultEvidenceService(EvidenceRepository evidenceRepository, EarningsRepository earnings,
+                                  PlatformRepository platforms, UserRepository users,
+                                  EvidenceStorage storage, NotificationSender notifications,
+                                  Transactions transactions) {
         this.evidenceRepository = evidenceRepository;
         this.earnings = earnings;
         this.platforms = platforms;
         this.users = users;
         this.storage = storage;
         this.notifications = notifications;
+        this.transactions = transactions;
     }
 
     @Override
@@ -55,19 +65,31 @@ public class DefaultEvidenceService implements EvidenceService {
         }
         FileType type = EvidenceFileValidator.validate(fileName, content);
 
+        // FR-17: new evidence for a Flagged or Unverifiable earning sends it back to Pending.
+        // The State pattern owns the rule; extra evidence on a Pending earning changes nothing.
+        VerificationStatus before = record.getStatus();
+        boolean resubmitting = before == VerificationStatus.DISPUTED_FLAGGED
+            || before == VerificationStatus.UNVERIFIABLE;
+        VerificationStatus after = resubmitting ? VerificationStates.of(before).resubmit().status() : before;
+
         String workerName = users.findById(workerId).map(User::getName).orElse("A worker");
         String platformName = platforms.findById(record.getPlatformId()).map(p -> p.getName()).orElse("a platform");
         String message = NotificationMessages.evidenceUploaded(workerName, platformName, record.getShiftDate());
 
-        // 1. the file goes to disk, 2. the database row + notifications are saved in ONE transaction,
-        // 3. if step 2 fails the file is removed again, so nothing is left half-done.
+        // 1. the file goes to disk, 2. the database row, the status change (when resubmitting) and the
+        // notifications are saved in ONE transaction, 3. if step 2 fails the file is removed again,
+        // so nothing is left half-done.
         String path = storage.store(recordId, type, content);
         Evidence evidence = new Evidence();
         evidence.setRecordId(recordId);
         evidence.setFilePath(path);
         evidence.setFileType(type);
         try {
-            TransactionManager.inTransaction(connection -> {
+            transactions.run(connection -> {
+                if (resubmitting && !earnings.updateStatus(connection, recordId, before, after)) {
+                    throw new ValidationException(
+                        "This earning was just reviewed by someone else. Please refresh and try again.");
+                }
                 evidenceRepository.save(connection, evidence);
                 notifications.notifyPlatformRepresentatives(connection, record.getPlatformId(), message);
                 return evidence;
