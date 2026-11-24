@@ -2,6 +2,8 @@ package com.fairgig.controller;
 
 import com.fairgig.model.ReviewDecision;
 import com.fairgig.model.VerificationReview;
+import com.fairgig.service.evidence.EvidenceFile;
+import com.fairgig.service.evidence.EvidenceService;
 import com.fairgig.service.verification.ReviewCase;
 import com.fairgig.service.verification.ReviewEntry;
 import com.fairgig.service.verification.VerificationService;
@@ -14,9 +16,16 @@ import java.util.List;
 public class VerificationController {
 
     private final VerificationService verification;
+    private final EvidenceService evidence;
 
-    public VerificationController(VerificationService verification) {
+    public VerificationController(VerificationService verification, EvidenceService evidence) {
         this.verification = verification;
+        this.evidence = evidence;
+    }
+
+    /** Opens one evidence file so it can be shown beside the figures (FR-19). Own platform only. */
+    public Outcome<EvidenceFile> readEvidence(int evidenceId) {
+        return Outcome.attempt(() -> evidence.readEvidence(evidenceId));
     }
 
     public Outcome<List<ReviewCase>> pendingEarnings(int platformId) {

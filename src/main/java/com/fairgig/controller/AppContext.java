@@ -106,7 +106,7 @@ public final class AppContext {
         verification = AccessProxy.wrap(VerificationService.class,
             new DefaultVerificationService(earningsRepository, reviewRepository, evidenceRepository, users,
                 platformRepository, notificationSender));
-        verificationController = new VerificationController(verification);
+        verificationController = new VerificationController(verification, evidence);
 
         // worker earnings history with status and filters (FR-15, FR-16)
         history = AccessProxy.wrap(EarningsHistoryService.class,

@@ -1,5 +1,9 @@
 package com.fairgig.ui;
 
+import com.fairgig.ui.verifier.VerifierHistoryPage;
+import com.fairgig.ui.verifier.VerifierHomePage;
+import com.fairgig.ui.verifier.VerifierPages;
+import com.fairgig.ui.verifier.VerifierPendingPage;
 import com.fairgig.ui.worker.WorkerCsvPage;
 import com.fairgig.ui.worker.WorkerEarningsPage;
 import com.fairgig.ui.worker.WorkerEvidencePage;
@@ -48,7 +52,20 @@ public final class PageFactory {
                     default -> { /* teammates' tabs: placeholder below */ }
                 }
             }
-            case REPRESENTATIVE -> { /* verification, commission, complaints: placeholders for now */ }
+            case REPRESENTATIVE -> {
+                switch (item.title()) {
+                    case VerifierPages.HOME -> {
+                        return new VerifierHomePage(ctx).build();
+                    }
+                    case VerifierPages.PENDING_REVIEWS -> {
+                        return new VerifierPendingPage(ctx).build();
+                    }
+                    case VerifierPages.REVIEW_HISTORY -> {
+                        return new VerifierHistoryPage(ctx).build();
+                    }
+                    default -> { /* commission and complaints: placeholders for now */ }
+                }
+            }
             case ADVOCATE -> { /* complaints, moderation, analytics: placeholders for now */ }
             default -> { }
         }
