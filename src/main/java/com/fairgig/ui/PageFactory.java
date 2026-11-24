@@ -7,6 +7,7 @@ import com.fairgig.ui.verifier.VerifierPendingPage;
 import com.fairgig.ui.worker.WorkerCsvPage;
 import com.fairgig.ui.worker.WorkerEarningsPage;
 import com.fairgig.ui.worker.WorkerEvidencePage;
+import com.fairgig.ui.worker.WorkerHistoryPage;
 import com.fairgig.ui.worker.WorkerHomePage;
 import com.fairgig.ui.worker.WorkerPages;
 import com.fairgig.ui.worker.WorkerPlatformsPage;
@@ -42,6 +43,9 @@ public final class PageFactory {
                     }
                     case WorkerPages.EARNINGS -> {
                         return new WorkerEarningsPage(ctx).build();
+                    }
+                    case WorkerPages.HISTORY -> {
+                        return new WorkerHistoryPage(ctx).build();
                     }
                     case WorkerPages.IMPORT_CSV -> {
                         return new WorkerCsvPage(ctx).build();
