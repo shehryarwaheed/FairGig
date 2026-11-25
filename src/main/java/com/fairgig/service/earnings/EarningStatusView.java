@@ -2,7 +2,7 @@ package com.fairgig.service.earnings;
 
 import com.fairgig.model.EarningsRecord;
 import com.fairgig.model.VerificationReview;
-import com.fairgig.model.VerificationStatus;
+import com.fairgig.state.verification.VerificationStates;
 
 /**
  * One row of the worker's earnings history (FR-15): the earning, its platform name and, when a
@@ -11,9 +11,8 @@ import com.fairgig.model.VerificationStatus;
  */
 public record EarningStatusView(EarningsRecord record, String platformName, VerificationReview latestReview) {
 
-    /** True for Flagged / Unverifiable earnings: the worker may upload new evidence (FR-17). */
+    /** True when the worker may upload new evidence (FR-17). The State decides, not this class. */
     public boolean canResubmitEvidence() {
-        VerificationStatus status = record.getStatus();
-        return status == VerificationStatus.DISPUTED_FLAGGED || status == VerificationStatus.UNVERIFIABLE;
+        return VerificationStates.of(record.getStatus()).canResubmit();
     }
 }

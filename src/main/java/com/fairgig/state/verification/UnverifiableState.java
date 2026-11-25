@@ -26,4 +26,9 @@ final class UnverifiableState implements VerificationState {
     public VerificationState resubmit() {
         return PendingState.INSTANCE;
     }
+
+    @Override
+    public boolean canResubmit() {
+        return true;
+    }
 }

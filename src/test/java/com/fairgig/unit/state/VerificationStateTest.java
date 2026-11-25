@@ -30,6 +30,19 @@ class VerificationStateTest {
         assertEquals(status, state(status).status());
     }
 
+    @ParameterizedTest
+    @EnumSource(VerificationStatus.class)
+    @DisplayName("only Flagged and Unverifiable allow re-upload, and the state's own resubmit() agrees (FR-17)")
+    void canResubmitIsOwnedByTheState(VerificationStatus status) {
+        boolean expected = status == VerificationStatus.DISPUTED_FLAGGED || status == VerificationStatus.UNVERIFIABLE;
+        assertEquals(expected, state(status).canResubmit());
+        if (expected) {
+            assertEquals(VerificationStatus.PENDING, state(status).resubmit().status());
+        } else {
+            assertThrows(ValidationException.class, () -> state(status).resubmit());
+        }
+    }
+
     @Nested
     class FromPending {
 

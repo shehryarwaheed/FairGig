@@ -1,6 +1,7 @@
 package com.fairgig.service.commission;
 
 import com.fairgig.model.CommissionRate;
+import com.fairgig.model.RateChange;
 import com.fairgig.model.Role;
 import com.fairgig.proxy.Access;
 import com.fairgig.proxy.OwnPlatform;
@@ -28,9 +29,9 @@ public interface CommissionService {
 
     /**
      * The rate history of one platform, NEWEST first. Each rate knows the one before it, so
-     * {@link CommissionRate#isSuddenChange()} can highlight big jumps (FR-26). Workers and
+     * {@link RateChange#isSuddenChange()} can highlight big jumps (FR-26). Workers and
      * advocates may look at any platform; a representative only at their own.
      */
     @Access
-    List<CommissionRate> history(@OwnPlatform int platformId);
+    List<RateChange> history(@OwnPlatform int platformId);
 }

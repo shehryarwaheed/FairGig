@@ -2,6 +2,7 @@ package com.fairgig.service.commission;
 
 import com.fairgig.model.CommissionRate;
 import com.fairgig.model.Platform;
+import com.fairgig.model.RateChange;
 import com.fairgig.repository.CommissionRateRepository;
 import com.fairgig.repository.PlatformRepository;
 import com.fairgig.util.NotFoundException;
@@ -71,19 +72,19 @@ public class DefaultCommissionService implements CommissionService {
     }
 
     @Override
-    public List<CommissionRate> history(int platformId) {
+    public List<RateChange> history(int platformId) {
         platforms.findById(platformId)
             .orElseThrow(() -> new NotFoundException("This platform no longer exists."));
 
-        // Oldest first: every rate is compared with the one before it...
-        List<CommissionRate> ordered = new ArrayList<>(rates.findByPlatform(platformId));
+        // Oldest first: every rate is paired with the one before it...
+        List<RateChange> changes = new ArrayList<>();
         BigDecimal previous = null;
-        for (CommissionRate rate : ordered) {
-            rate.setPreviousPercent(previous);
+        for (CommissionRate rate : rates.findByPlatform(platformId)) {
+            changes.add(new RateChange(rate, previous));
             previous = rate.getRatePercent();
         }
         // ...but the screen wants the newest first.
-        Collections.reverse(ordered);
-        return ordered;
+        Collections.reverse(changes);
+        return changes;
     }
 }

@@ -30,4 +30,12 @@ public interface VerificationState {
 
     /** The worker re-uploads evidence, which sends the earning back to Pending (FR-17). */
     VerificationState resubmit();
+
+    /**
+     * True when new evidence may be uploaded to send the earning back to Pending (FR-17). This is
+     * the ONE place that says which statuses allow it; screens and services ask the state.
+     */
+    default boolean canResubmit() {
+        return false;
+    }
 }

@@ -14,6 +14,7 @@ import com.fairgig.repository.PlatformRepository;
 import com.fairgig.repository.UserRepository;
 import com.fairgig.service.notification.NotificationMessages;
 import com.fairgig.service.notification.NotificationSender;
+import com.fairgig.state.verification.VerificationState;
 import com.fairgig.state.verification.VerificationStates;
 import com.fairgig.storage.EvidenceStorage;
 import com.fairgig.util.AccessDeniedException;
@@ -66,11 +67,11 @@ public class DefaultEvidenceService implements EvidenceService {
         FileType type = EvidenceFileValidator.validate(fileName, content);
 
         // FR-17: new evidence for a Flagged or Unverifiable earning sends it back to Pending.
-        // The State pattern owns the rule; extra evidence on a Pending earning changes nothing.
+        // The State decides if that applies; extra evidence on a Pending earning changes nothing.
         VerificationStatus before = record.getStatus();
-        boolean resubmitting = before == VerificationStatus.DISPUTED_FLAGGED
-            || before == VerificationStatus.UNVERIFIABLE;
-        VerificationStatus after = resubmitting ? VerificationStates.of(before).resubmit().status() : before;
+        VerificationState state = VerificationStates.of(before);
+        boolean resubmitting = state.canResubmit();
+        VerificationStatus after = resubmitting ? state.resubmit().status() : before;
 
         String workerName = users.findById(workerId).map(User::getName).orElse("A worker");
         String platformName = platforms.findById(record.getPlatformId()).map(p -> p.getName()).orElse("a platform");

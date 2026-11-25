@@ -2,6 +2,7 @@ package com.fairgig.ui.verifier;
 
 import com.fairgig.controller.Outcome;
 import com.fairgig.model.CommissionRate;
+import com.fairgig.model.RateChange;
 import com.fairgig.ui.Banner;
 import com.fairgig.ui.CommissionHistoryView;
 import com.fairgig.ui.FormField;
@@ -86,7 +87,7 @@ public class VerifierCommissionPage {
     // ---------------------------------------------------------------- data
 
     private void loadHistory() {
-        Outcome<List<CommissionRate>> history = ctx.app().commission().history(platformId);
+        Outcome<List<RateChange>> history = ctx.app().commission().history(platformId);
         if (!history.isOk()) {
             banner.showError(history.problems());
             historyHolder.getChildren().clear();

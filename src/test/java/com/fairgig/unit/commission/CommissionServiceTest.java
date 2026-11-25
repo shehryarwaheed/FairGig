@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fairgig.model.CommissionRate;
+import com.fairgig.model.RateChange;
 import com.fairgig.proxy.AccessProxy;
 import com.fairgig.security.Session;
 import com.fairgig.service.commission.CommissionService;
@@ -64,18 +65,18 @@ class CommissionServiceTest {
     @Test
     @DisplayName("history is newest first and every rate knows the one before it")
     void historyOrderAndPrevious() {
-        List<CommissionRate> history = service.history(UBER);
+        List<RateChange> history = service.history(UBER);
         assertEquals(3, history.size());
-        assertEquals(LocalDate.of(2026, 9, 1), history.get(0).getEffectiveDate());
-        assertEquals(LocalDate.of(2026, 1, 1), history.get(2).getEffectiveDate());
-        assertEquals(0, pct("22.00").compareTo(history.get(0).getPreviousPercent()));
-        assertEquals(null, history.get(2).getPreviousPercent());
+        assertEquals(LocalDate.of(2026, 9, 1), history.get(0).rate().getEffectiveDate());
+        assertEquals(LocalDate.of(2026, 1, 1), history.get(2).rate().getEffectiveDate());
+        assertEquals(0, pct("22.00").compareTo(history.get(0).previousPercent()));
+        assertEquals(null, history.get(2).previousPercent());
     }
 
     @Test
     @DisplayName("a big jump is highlighted, a small one is not (FR-26)")
     void suddenChangesAreFlagged() {
-        List<CommissionRate> history = service.history(UBER);
+        List<RateChange> history = service.history(UBER);
         assertTrue(history.get(0).isSuddenChange());      // 22 -> 30
         assertFalse(history.get(1).isSuddenChange());     // 20 -> 22
         assertFalse(history.get(2).isSuddenChange());     // first rate
@@ -110,9 +111,9 @@ class CommissionServiceTest {
     @DisplayName("a rate recorded in the middle of the history is compared with the right neighbour")
     void recordedRateFitsIntoHistory() {
         service.recordRate(UBER_REP, UBER, pct("40"), LocalDate.of(2026, 11, 1));
-        CommissionRate newest = service.history(UBER).get(0);
-        assertEquals(0, pct("40.00").compareTo(newest.getRatePercent()));
-        assertEquals(0, pct("30.00").compareTo(newest.getPreviousPercent()));
+        RateChange newest = service.history(UBER).get(0);
+        assertEquals(0, pct("40.00").compareTo(newest.rate().getRatePercent()));
+        assertEquals(0, pct("30.00").compareTo(newest.previousPercent()));
         assertTrue(newest.isSuddenChange());
     }
 

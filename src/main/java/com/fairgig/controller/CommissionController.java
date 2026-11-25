@@ -1,6 +1,7 @@
 package com.fairgig.controller;
 
 import com.fairgig.model.CommissionRate;
+import com.fairgig.model.RateChange;
 import com.fairgig.service.commission.CommissionService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -20,7 +21,7 @@ public class CommissionController {
         return Outcome.attempt(() -> commission.recordRate(representativeId, platformId, ratePercent, effectiveDate));
     }
 
-    public Outcome<List<CommissionRate>> history(int platformId) {
+    public Outcome<List<RateChange>> history(int platformId) {
         return Outcome.attempt(() -> commission.history(platformId));
     }
 }

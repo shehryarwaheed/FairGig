@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fairgig.model.CommissionRate;
+import com.fairgig.model.RateChange;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,19 +14,18 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 /** FR-26: a rate that jumps by 5 percentage points or more is a "sudden change". */
-class CommissionRateTest {
+class RateChangeTest {
 
-    private static CommissionRate rate(String percent, String previous) {
+    private static RateChange rate(String percent, String previous) {
         CommissionRate r = new CommissionRate();
         r.setRatePercent(new BigDecimal(percent));
-        r.setPreviousPercent(previous == null ? null : new BigDecimal(previous));
-        return r;
+        return new RateChange(r, previous == null ? null : new BigDecimal(previous));
     }
 
     @Test
     @DisplayName("the first rate has nothing to compare with, so it is never sudden")
     void firstRateIsNeverSudden() {
-        CommissionRate first = rate("25", null);
+        RateChange first = rate("25", null);
         assertNull(first.changeFromPrevious());
         assertFalse(first.isSuddenChange());
     }
@@ -53,6 +53,6 @@ class CommissionRateTest {
 
     @Test
     void thresholdConstantIsFive() {
-        assertTrue(CommissionRate.SUDDEN_CHANGE_POINTS.compareTo(new BigDecimal("5")) == 0);
+        assertTrue(RateChange.SUDDEN_CHANGE_POINTS.compareTo(new BigDecimal("5")) == 0);
     }
 }

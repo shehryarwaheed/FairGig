@@ -1,8 +1,8 @@
 package com.fairgig.ui.worker;
 
 import com.fairgig.controller.Outcome;
-import com.fairgig.model.CommissionRate;
 import com.fairgig.model.Platform;
+import com.fairgig.model.RateChange;
 import com.fairgig.service.platform.WorkerPlatformInfo;
 import com.fairgig.ui.Banner;
 import com.fairgig.ui.ChipGroup;
@@ -38,7 +38,7 @@ public class WorkerCommissionPage {
     public Node build() {
         VBox page = Pages.page();
 
-        Label hint = Widgets.label("A change of " + CommissionRate.SUDDEN_CHANGE_POINTS.toPlainString()
+        Label hint = Widgets.label("A change of " + RateChange.SUDDEN_CHANGE_POINTS.toPlainString()
             + " percentage points or more is highlighted as a sudden change. Platforms you work on are listed first.",
             "h-sub");
         hint.setWrapText(true);
@@ -79,7 +79,7 @@ public class WorkerCommissionPage {
 
     private void showHistory(Platform platform) {
         banner.hide();
-        Outcome<List<CommissionRate>> history = ctx.app().commission().history(platform.getPlatformId());
+        Outcome<List<RateChange>> history = ctx.app().commission().history(platform.getPlatformId());
         if (!history.isOk()) {
             banner.showError(history.problems());
             historyHolder.getChildren().clear();
