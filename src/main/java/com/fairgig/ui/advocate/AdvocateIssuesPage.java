@@ -47,8 +47,8 @@ public class AdvocateIssuesPage {
 
     private void load() {
         listHolder.getChildren().clear();
-        Outcome<List<IssueSummary>> issues = ctx.app().complaints().issues();
-        Outcome<List<ComplaintView>> all = ctx.app().complaints().allComplaints();
+        Outcome<List<IssueSummary>> issues = ctx.app().advocateComplaints().issues();
+        Outcome<List<ComplaintView>> all = ctx.app().advocateComplaints().allComplaints();
         if (!issues.isOk()) {
             banner.showError(issues.problems());
             return;
@@ -112,7 +112,7 @@ public class AdvocateIssuesPage {
         remove.setStyle("-fx-padding: 5 12 5 12; -fx-font-size: 12px;");
         remove.setOnAction(e -> {
             banner.hide();
-            Outcome<Void> result = ctx.app().complaints().assignToIssue(ctx.userId(), complaint.getComplaintId(), null);
+            Outcome<Void> result = ctx.app().advocateComplaints().assignToIssue(ctx.userId(), complaint.getComplaintId(), null);
             if (result.isOk()) {
                 load();
                 banner.showSuccess("The complaint was taken out of the issue.");

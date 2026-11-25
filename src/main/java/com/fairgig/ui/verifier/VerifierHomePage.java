@@ -54,7 +54,7 @@ public class VerifierHomePage {
         }
         List<ReviewEntry> decisions = history.isOk() ? history.value() : List.of();
 
-        Outcome<List<ComplaintView>> complaints = ctx.app().complaints().platformComplaints(platformId);
+        Outcome<List<ComplaintView>> complaints = ctx.app().representativeComplaints().platformComplaints(platformId);
         long openComplaints = complaints.isOk()
             ? complaints.value().stream().filter(c -> c.complaint().getStatus() != ComplaintStatus.RESOLVED).count()
             : 0;

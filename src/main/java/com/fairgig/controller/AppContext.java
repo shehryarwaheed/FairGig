@@ -30,8 +30,12 @@ import com.fairgig.service.auth.AuthService;
 import com.fairgig.service.auth.DefaultAuthService;
 import com.fairgig.service.commission.CommissionService;
 import com.fairgig.service.commission.DefaultCommissionService;
-import com.fairgig.service.complaint.ComplaintService;
-import com.fairgig.service.complaint.DefaultComplaintService;
+import com.fairgig.service.complaint.AdvocateComplaintService;
+import com.fairgig.service.complaint.DefaultAdvocateComplaintService;
+import com.fairgig.service.complaint.DefaultRepresentativeComplaintService;
+import com.fairgig.service.complaint.DefaultWorkerComplaintService;
+import com.fairgig.service.complaint.RepresentativeComplaintService;
+import com.fairgig.service.complaint.WorkerComplaintService;
 import com.fairgig.service.csv.CsvImportService;
 import com.fairgig.service.csv.DefaultCsvImportService;
 import com.fairgig.service.earnings.DefaultEarningsHistoryService;
@@ -92,7 +96,9 @@ public final class AppContext {
     private final VerificationService verification;
     private final EarningsHistoryService history;
     private final CommissionService commission;
-    private final ComplaintService complaints;
+    private final WorkerComplaintService workerComplaints;
+    private final RepresentativeComplaintService representativeComplaints;
+    private final AdvocateComplaintService advocateComplaints;
 
     // ---- controllers (what the screens use)
     private final AuthController authController;
@@ -101,7 +107,9 @@ public final class AppContext {
     private final VerificationController verificationController;
     private final EarningsHistoryController historyController;
     private final CommissionController commissionController;
-    private final ComplaintController complaintController;
+    private final WorkerComplaintController workerComplaintController;
+    private final RepresentativeComplaintController representativeComplaintController;
+    private final AdvocateComplaintController advocateComplaintController;
 
     private AppContext() {
         auth = AccessProxy.wrap(AuthService.class, new DefaultAuthService(users, platformRepository));
@@ -138,11 +146,18 @@ public final class AppContext {
             new DefaultCommissionService(commissionRateRepository, platformRepository));
         commissionController = new CommissionController(commission);
 
-        // complaints for workers, representatives and advocates (FR-30 to FR-33)
-        complaints = AccessProxy.wrap(ComplaintService.class,
-            new DefaultComplaintService(complaintRepository, complaintClusterRepository, complaintTagRepository,
-                earningsRepository, platformRepository, workerPlatformRepository, users, notificationSender));
-        complaintController = new ComplaintController(complaints);
+        // complaints: one service and controller per role (FR-30 to FR-33)
+        workerComplaints = AccessProxy.wrap(WorkerComplaintService.class,
+            new DefaultWorkerComplaintService(complaintRepository, earningsRepository, platformRepository,
+                workerPlatformRepository, users, notificationSender));
+        representativeComplaints = AccessProxy.wrap(RepresentativeComplaintService.class,
+            new DefaultRepresentativeComplaintService(complaintRepository, platformRepository, users, notificationSender));
+        advocateComplaints = AccessProxy.wrap(AdvocateComplaintService.class,
+            new DefaultAdvocateComplaintService(complaintRepository, complaintClusterRepository, complaintTagRepository,
+                platformRepository, users, notificationSender));
+        workerComplaintController = new WorkerComplaintController(workerComplaints);
+        representativeComplaintController = new RepresentativeComplaintController(representativeComplaints);
+        advocateComplaintController = new AdvocateComplaintController(advocateComplaints);
     }
 
     /** The shared instance (created on first use). */
@@ -182,8 +197,16 @@ public final class AppContext {
         return commissionController;
     }
 
-    public ComplaintController complaints() {
-        return complaintController;
+    public WorkerComplaintController workerComplaints() {
+        return workerComplaintController;
+    }
+
+    public RepresentativeComplaintController representativeComplaints() {
+        return representativeComplaintController;
+    }
+
+    public AdvocateComplaintController advocateComplaints() {
+        return advocateComplaintController;
     }
 
     /** For other services that need to send notifications (FR-41). Internal use only. */

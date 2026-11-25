@@ -94,9 +94,9 @@ public class AdvocateComplaintsPage {
     // ---------------------------------------------------------------- data
 
     private void load() {
-        Outcome<List<ComplaintView>> all = ctx.app().complaints().allComplaints();
-        Outcome<List<IssueSummary>> issueList = ctx.app().complaints().issues();
-        Outcome<List<ComplaintTag>> tagList = ctx.app().complaints().allTags();
+        Outcome<List<ComplaintView>> all = ctx.app().advocateComplaints().allComplaints();
+        Outcome<List<IssueSummary>> issueList = ctx.app().advocateComplaints().issues();
+        Outcome<List<ComplaintTag>> tagList = ctx.app().advocateComplaints().allTags();
         if (!all.isOk()) {
             banner.showError(all.problems());
             listHolder.getChildren().clear();
@@ -174,7 +174,7 @@ public class AdvocateComplaintsPage {
             return;
         }
         int count = selected.size();
-        Outcome<ComplaintCluster> result = ctx.app().complaints().createIssue(
+        Outcome<ComplaintCluster> result = ctx.app().advocateComplaints().createIssue(
             ctx.userId(), new ArrayList<>(selected), issueTitle.text(), issueDescription.text());
         if (result.isOk()) {
             selected.clear();
@@ -300,7 +300,7 @@ public class AdvocateComplaintsPage {
 
     private void addTag(int complaintId, String name, Banner cardBanner) {
         cardBanner.hide();
-        Outcome<ComplaintTag> result = ctx.app().complaints().tag(ctx.userId(), complaintId, name);
+        Outcome<ComplaintTag> result = ctx.app().advocateComplaints().tag(ctx.userId(), complaintId, name);
         if (result.isOk()) {
             savedNotes.put(complaintId, "Tag \"" + result.value().getName() + "\" added.");
             load();
@@ -311,7 +311,7 @@ public class AdvocateComplaintsPage {
 
     private void removeTag(int complaintId, ComplaintTag tag, Banner cardBanner) {
         cardBanner.hide();
-        Outcome<Void> result = ctx.app().complaints().removeTag(ctx.userId(), complaintId, tag.getTagId());
+        Outcome<Void> result = ctx.app().advocateComplaints().removeTag(ctx.userId(), complaintId, tag.getTagId());
         if (result.isOk()) {
             savedNotes.put(complaintId, "Tag \"" + tag.getName() + "\" removed.");
             load();
@@ -353,7 +353,7 @@ public class AdvocateComplaintsPage {
 
     private void assign(int complaintId, Integer clusterId, String successNote, Banner cardBanner) {
         cardBanner.hide();
-        Outcome<Void> result = ctx.app().complaints().assignToIssue(ctx.userId(), complaintId, clusterId);
+        Outcome<Void> result = ctx.app().advocateComplaints().assignToIssue(ctx.userId(), complaintId, clusterId);
         if (result.isOk()) {
             savedNotes.put(complaintId, successNote);
             load();
@@ -366,7 +366,7 @@ public class AdvocateComplaintsPage {
 
     private void escalate(Complaint complaint, Banner cardBanner) {
         cardBanner.hide();
-        Outcome<Complaint> result = ctx.app().complaints().escalate(ctx.userId(), complaint.getComplaintId());
+        Outcome<Complaint> result = ctx.app().advocateComplaints().escalate(ctx.userId(), complaint.getComplaintId());
         if (result.isOk()) {
             savedNotes.put(complaint.getComplaintId(), "Complaint escalated. The worker has been notified.");
             load();
@@ -385,7 +385,7 @@ public class AdvocateComplaintsPage {
         if (alert.showAndWait().filter(b -> b == ButtonType.YES).isEmpty()) {
             return;
         }
-        Outcome<Complaint> result = ctx.app().complaints().resolveAsAdvocate(ctx.userId(), complaint.getComplaintId());
+        Outcome<Complaint> result = ctx.app().advocateComplaints().resolveAsAdvocate(ctx.userId(), complaint.getComplaintId());
         if (result.isOk()) {
             savedNotes.put(complaint.getComplaintId(), "Complaint resolved. The worker has been notified.");
             load();

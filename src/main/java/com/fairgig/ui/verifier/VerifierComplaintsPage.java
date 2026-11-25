@@ -81,7 +81,7 @@ public class VerifierComplaintsPage {
     // ---------------------------------------------------------------- data
 
     private void load() {
-        Outcome<List<ComplaintView>> result = ctx.app().complaints().platformComplaints(platformId);
+        Outcome<List<ComplaintView>> result = ctx.app().representativeComplaints().platformComplaints(platformId);
         if (!result.isOk()) {
             banner.showError(result.problems());
             listHolder.getChildren().clear();
@@ -188,7 +188,7 @@ public class VerifierComplaintsPage {
     private void send(Complaint complaint, TextAreaField answer, Banner cardBanner) {
         cardBanner.hide();
         answer.setError(null);
-        Outcome<ComplaintResponse> result = ctx.app().complaints()
+        Outcome<ComplaintResponse> result = ctx.app().representativeComplaints()
             .respond(ctx.userId(), complaint.getComplaintId(), answer.text());
         if (result.isOk()) {
             savedNotes.put(complaint.getComplaintId(), "Answer sent. The worker has been notified.");
@@ -209,7 +209,7 @@ public class VerifierComplaintsPage {
         if (!confirmResolve(source)) {
             return;
         }
-        Outcome<Complaint> result = ctx.app().complaints().resolve(ctx.userId(), complaint.getComplaintId());
+        Outcome<Complaint> result = ctx.app().representativeComplaints().resolve(ctx.userId(), complaint.getComplaintId());
         if (result.isOk()) {
             savedNotes.put(complaint.getComplaintId(), "Complaint resolved. The worker has been notified.");
             load();

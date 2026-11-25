@@ -150,7 +150,7 @@ public class WorkerComplaintsPage {
         }
         Integer recordId = earning == null || earning.record() == null ? null : earning.record().getRecordId();
 
-        Outcome<Complaint> result = ctx.app().complaints().fileComplaint(ctx.userId(),
+        Outcome<Complaint> result = ctx.app().workerComplaints().fileComplaint(ctx.userId(),
             platform.platform().getPlatformId(), categoryChips.selected(), description.text(), recordId);
         if (result.isOk()) {
             clearForm();
@@ -176,7 +176,7 @@ public class WorkerComplaintsPage {
     // ---------------------------------------------------------------- my complaints (FR-31)
 
     private void loadComplaints() {
-        Outcome<List<ComplaintView>> mine = ctx.app().complaints().myComplaints(ctx.userId());
+        Outcome<List<ComplaintView>> mine = ctx.app().workerComplaints().myComplaints(ctx.userId());
         listHolder.getChildren().clear();
         if (!mine.isOk()) {
             banner.showError(mine.problems());
