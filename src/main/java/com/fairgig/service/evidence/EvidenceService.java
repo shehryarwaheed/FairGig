@@ -10,14 +10,15 @@ import java.util.List;
  * Evidence for earnings: screenshots or payment statements (FR-14, NFR-09).
  * Screens must use the proxied instance.
  * <p>
- * Note for the verification feature (FR-17, resubmit): call {@link #uploadEvidence} first, then
- * move the earning back to PENDING in the verification service.
+ * Re-upload (FR-17): uploading evidence for a Flagged or Unverifiable earning also moves it back
+ * to PENDING, in the same transaction (the State pattern decides). No separate call is needed.
  */
 public interface EvidenceService {
 
     /**
      * Saves a PNG, JPG or PDF (max 5 MB) as evidence for one of the worker's earnings and
-     * notifies the platform's representatives, both in one transaction (FR-41).
+     * notifies the platform's representatives, both in one transaction (FR-41). For a Flagged or
+     * Unverifiable earning the status also returns to PENDING (FR-17).
      *
      * @throws com.fairgig.util.ValidationException for a bad file, or an earning that is already verified
      */

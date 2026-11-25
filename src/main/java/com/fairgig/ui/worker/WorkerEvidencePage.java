@@ -6,7 +6,6 @@ import com.fairgig.model.Evidence;
 import com.fairgig.model.FileType;
 import com.fairgig.model.VerificationStatus;
 import com.fairgig.service.evidence.EvidenceFile;
-import com.fairgig.service.evidence.EvidenceFileValidator;
 import com.fairgig.ui.Banner;
 import com.fairgig.ui.ChipGroup;
 import com.fairgig.ui.Fmt;
@@ -15,8 +14,6 @@ import com.fairgig.ui.PageContext;
 import com.fairgig.ui.Pages;
 import com.fairgig.ui.Widgets;
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +27,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.stage.FileChooser;
 
 /**
  * "Evidence" tab (FR-14, NFR-09): pick one of your earnings, attach a PNG / JPG / PDF (max 5 MB)
@@ -156,12 +152,9 @@ public class WorkerEvidencePage {
     // ---------------------------------------------------------------- upload
 
     private void chooseFile() {
-        FileChooser chooser = new FileChooser();
-        chooser.setTitle("Choose evidence (PNG, JPG or PDF)");
-        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Images and PDF", "*.png", "*.jpg", "*.jpeg", "*.pdf"));
-        java.io.File file = chooser.showOpenDialog(Pages.window(chooseButton));
+        Path file = EvidenceFiles.choose(chooseButton, "Choose evidence (PNG, JPG or PDF)");
         if (file != null) {
-            chooseFile(file.toPath());
+            chooseFile(file);
         }
     }
 
@@ -184,15 +177,8 @@ public class WorkerEvidencePage {
             banner.showError("Please choose a file first.");
             return;
         }
-        byte[] bytes;
-        try {
-            if (Files.size(chosenFile) > EvidenceFileValidator.MAX_BYTES) {
-                banner.showError("This file is too large. The limit is 5 MB. Please choose a smaller file or compress it.");
-                return;
-            }
-            bytes = Files.readAllBytes(chosenFile);
-        } catch (IOException e) {
-            banner.showError("The file could not be read. Please check that it is not open in another program.");
+        byte[] bytes = EvidenceFiles.readChecked(chosenFile, banner);
+        if (bytes == null) {
             return;
         }
         Outcome<Evidence> result = ctx.app().worker().uploadEvidence(

@@ -1,8 +1,20 @@
 package com.fairgig.ui;
 
+import com.fairgig.ui.advocate.AdvocateComplaintsPage;
+import com.fairgig.ui.advocate.AdvocateIssuesPage;
+import com.fairgig.ui.advocate.AdvocatePages;
+import com.fairgig.ui.verifier.VerifierCommissionPage;
+import com.fairgig.ui.verifier.VerifierComplaintsPage;
+import com.fairgig.ui.verifier.VerifierHistoryPage;
+import com.fairgig.ui.verifier.VerifierHomePage;
+import com.fairgig.ui.verifier.VerifierPages;
+import com.fairgig.ui.verifier.VerifierPendingPage;
+import com.fairgig.ui.worker.WorkerCommissionPage;
+import com.fairgig.ui.worker.WorkerComplaintsPage;
 import com.fairgig.ui.worker.WorkerCsvPage;
 import com.fairgig.ui.worker.WorkerEarningsPage;
 import com.fairgig.ui.worker.WorkerEvidencePage;
+import com.fairgig.ui.worker.WorkerHistoryPage;
 import com.fairgig.ui.worker.WorkerHomePage;
 import com.fairgig.ui.worker.WorkerPages;
 import com.fairgig.ui.worker.WorkerPlatformsPage;
@@ -39,6 +51,15 @@ public final class PageFactory {
                     case WorkerPages.EARNINGS -> {
                         return new WorkerEarningsPage(ctx).build();
                     }
+                    case WorkerPages.COMMISSION -> {
+                        return new WorkerCommissionPage(ctx).build();
+                    }
+                    case WorkerPages.COMPLAINTS -> {
+                        return new WorkerComplaintsPage(ctx).build();
+                    }
+                    case WorkerPages.HISTORY -> {
+                        return new WorkerHistoryPage(ctx).build();
+                    }
                     case WorkerPages.IMPORT_CSV -> {
                         return new WorkerCsvPage(ctx).build();
                     }
@@ -48,8 +69,37 @@ public final class PageFactory {
                     default -> { /* teammates' tabs: placeholder below */ }
                 }
             }
-            case REPRESENTATIVE -> { /* verification, commission, complaints: placeholders for now */ }
-            case ADVOCATE -> { /* complaints, moderation, analytics: placeholders for now */ }
+            case REPRESENTATIVE -> {
+                switch (item.title()) {
+                    case VerifierPages.HOME -> {
+                        return new VerifierHomePage(ctx).build();
+                    }
+                    case VerifierPages.PENDING_REVIEWS -> {
+                        return new VerifierPendingPage(ctx).build();
+                    }
+                    case VerifierPages.REVIEW_HISTORY -> {
+                        return new VerifierHistoryPage(ctx).build();
+                    }
+                    case VerifierPages.COMMISSION_RATES -> {
+                        return new VerifierCommissionPage(ctx).build();
+                    }
+                    case VerifierPages.COMPLAINTS -> {
+                        return new VerifierComplaintsPage(ctx).build();
+                    }
+                    default -> { /* every representative tab is built */ }
+                }
+            }
+            case ADVOCATE -> {
+                switch (item.title()) {
+                    case AdvocatePages.COMPLAINTS -> {
+                        return new AdvocateComplaintsPage(ctx).build();
+                    }
+                    case AdvocatePages.ISSUE_CLUSTERS -> {
+                        return new AdvocateIssuesPage(ctx).build();
+                    }
+                    default -> { /* home, moderation and analytics: placeholders for now */ }
+                }
+            }
             default -> { }
         }
         return PlaceholderPages.create(ctx.role(), item);

@@ -7,6 +7,7 @@ import com.fairgig.service.platform.WorkerPlatformInfo;
 import com.fairgig.strategy.validation.FieldProblem;
 import com.fairgig.strategy.validation.ValidationResult;
 import com.fairgig.ui.Banner;
+import com.fairgig.ui.Buttons;
 import com.fairgig.ui.ChipGroup;
 import com.fairgig.ui.FormField;
 import com.fairgig.ui.NavItem;
@@ -173,9 +174,7 @@ public class WorkerEarningsPage {
     // ---------------------------------------------------------------- form logic
 
     private Button quickDate(String text, int daysAgo) {
-        Button b = Widgets.secondaryButton(text);
-        b.setMaxWidth(Region.USE_PREF_SIZE);
-        b.setStyle("-fx-padding: 5 12 5 12; -fx-font-size: 12px;");
+        Button b = Buttons.small(text);
         b.setOnAction(e -> {
             date.setText(LocalDate.now().minusDays(daysAgo).toString());
             touch("shiftDate");
