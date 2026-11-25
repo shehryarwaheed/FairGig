@@ -10,6 +10,7 @@ import com.fairgig.service.evidence.EvidenceFile;
 import com.fairgig.service.verification.ReviewCase;
 import com.fairgig.ui.Banner;
 import com.fairgig.ui.ChipGroup;
+import com.fairgig.ui.Dialogs;
 import com.fairgig.ui.Fmt;
 import com.fairgig.ui.FormField;
 import com.fairgig.ui.Icons;
@@ -23,9 +24,7 @@ import java.nio.file.Path;
 import java.util.List;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -226,7 +225,8 @@ public class VerifierPendingPage {
             explanation.setError("Please explain why you are flagging this earning.");
             return;
         }
-        if (decision == ReviewDecision.VERIFIED && !confirmVerified(source)) {
+        if (decision == ReviewDecision.VERIFIED && !Dialogs.confirm(source, "Mark this earning as Verified?",
+                "Verified is final. This earning can never go back to Pending. Continue?")) {
             return;
         }
         Outcome<VerificationReview> result = ctx.app().verification().review(
@@ -239,13 +239,4 @@ public class VerifierPendingPage {
         }
     }
 
-    /** Verified cannot be undone, so ask once. */
-    private boolean confirmVerified(Node source) {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
-            "Verified is final. This earning can never go back to Pending. Continue?",
-            ButtonType.YES, ButtonType.NO);
-        alert.setHeaderText("Mark this earning as Verified?");
-        alert.initOwner(Pages.window(source));
-        return alert.showAndWait().filter(button -> button == ButtonType.YES).isPresent();
-    }
 }

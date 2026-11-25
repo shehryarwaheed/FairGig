@@ -409,3 +409,6 @@
 .demo-chip:hover { -fx-background-color: -accent-soft; }
 .thumb { -fx-background-color: -well; -fx-background-radius: 16; -fx-padding: 8; }
 .tint-violet { -fx-background-color: -violet-soft; }
+
+/* ---- compact button (see ui.Buttons.small) ---- */
+.btn-small { -fx-padding: 5 12 5 12; -fx-font-size: 12px; }

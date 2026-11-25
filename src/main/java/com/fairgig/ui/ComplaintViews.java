@@ -3,6 +3,7 @@ package com.fairgig.ui;
 import com.fairgig.model.Complaint;
 import com.fairgig.model.ComplaintResponse;
 import com.fairgig.model.ComplaintStatus;
+import java.util.ArrayList;
 import java.util.List;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
@@ -13,6 +14,24 @@ import javafx.scene.layout.VBox;
 public final class ComplaintViews {
 
     private ComplaintViews() {}
+
+    /** One choice of a "show only this status" filter. A null status means "all". */
+    public record StatusFilter(ComplaintStatus status, String label) {
+
+        /** "All", then one option per status, in order. */
+        public static List<StatusFilter> options() {
+            List<StatusFilter> options = new ArrayList<>();
+            options.add(new StatusFilter(null, "All"));
+            for (ComplaintStatus status : ComplaintStatus.values()) {
+                options.add(new StatusFilter(status, status.label()));
+            }
+            return options;
+        }
+
+        public boolean accepts(Complaint complaint) {
+            return status == null || complaint.getStatus() == status;
+        }
+    }
 
     /** A coloured pill: Submitted = amber, Escalated = coral, Resolved = green. */
     public static Label statusChip(ComplaintStatus status) {

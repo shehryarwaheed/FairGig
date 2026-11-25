@@ -4,6 +4,7 @@ import com.fairgig.controller.Outcome;
 import com.fairgig.model.CommissionRate;
 import com.fairgig.model.RateChange;
 import com.fairgig.ui.Banner;
+import com.fairgig.ui.Buttons;
 import com.fairgig.ui.CommissionHistoryView;
 import com.fairgig.ui.FormField;
 import com.fairgig.ui.PageContext;
@@ -55,9 +56,7 @@ public class VerifierCommissionPage {
         String platformName = VerifierViews.platformName(ctx, platformId);
 
         effective.setText(LocalDate.now().toString());
-        Button today = Widgets.secondaryButton("Today");
-        today.setMaxWidth(Region.USE_PREF_SIZE);
-        today.setStyle("-fx-padding: 5 12 5 12; -fx-font-size: 12px;");
+        Button today = Buttons.small("Today");
         today.setOnAction(e -> effective.setText(LocalDate.now().toString()));
         HBox quick = new HBox(8, Widgets.label("Quick date:", "hint-text"), today);
         quick.setAlignment(Pos.CENTER_LEFT);

@@ -3,27 +3,24 @@ package com.fairgig.ui.verifier;
 import com.fairgig.controller.Outcome;
 import com.fairgig.model.Complaint;
 import com.fairgig.model.ComplaintResponse;
-import com.fairgig.model.ComplaintStatus;
 import com.fairgig.model.EarningsRecord;
 import com.fairgig.service.complaint.ComplaintView;
 import com.fairgig.service.verification.ReviewCase;
 import com.fairgig.ui.Banner;
+import com.fairgig.ui.CardNotes;
 import com.fairgig.ui.ChipGroup;
+import com.fairgig.ui.ComplaintViews.StatusFilter;
 import com.fairgig.ui.ComplaintViews;
+import com.fairgig.ui.Dialogs;
 import com.fairgig.ui.Fmt;
 import com.fairgig.ui.PageContext;
 import com.fairgig.ui.Pages;
 import com.fairgig.ui.TextAreaField;
 import com.fairgig.ui.Widgets;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
@@ -37,14 +34,11 @@ import javafx.scene.layout.VBox;
  */
 public class VerifierComplaintsPage {
 
-    /** One choice of the status filter. A null status means "all". */
-    private record StatusFilter(ComplaintStatus status, String label) { }
-
     private final PageContext ctx;
     private final Banner banner = new Banner();
     private final ChipGroup<StatusFilter> filter = new ChipGroup<>(StatusFilter::label);
     private final VBox listHolder = new VBox(14);
-    private final Map<Integer, String> savedNotes = new HashMap<>();
+    private final CardNotes notes = new CardNotes();
     private List<ComplaintView> loaded = List.of();
     private Integer platformId;
 
@@ -64,11 +58,7 @@ public class VerifierComplaintsPage {
             return Pages.scroll(page);
         }
 
-        List<StatusFilter> options = new ArrayList<>();
-        options.add(new StatusFilter(null, "All"));
-        for (ComplaintStatus status : ComplaintStatus.values()) {
-            options.add(new StatusFilter(status, status.label()));
-        }
+        List<StatusFilter> options = StatusFilter.options();
         filter.setItems(options);
         filter.select(options.get(0));
         filter.setOnChange(o -> showList());
@@ -94,7 +84,7 @@ public class VerifierComplaintsPage {
     private void showList() {
         StatusFilter chosen = filter.selected();
         List<ComplaintView> shown = loaded.stream()
-            .filter(v -> chosen == null || chosen.status() == null || v.complaint().getStatus() == chosen.status())
+            .filter(v -> chosen == null || chosen.accepts(v.complaint()))
             .toList();
         listHolder.getChildren().clear();
         if (shown.isEmpty()) {
@@ -112,11 +102,7 @@ public class VerifierComplaintsPage {
 
     private Node card(ComplaintView view) {
         Complaint complaint = view.complaint();
-        Banner cardBanner = new Banner();
-        String note = savedNotes.remove(complaint.getComplaintId());
-        if (note != null) {
-            cardBanner.showSuccess(note);
-        }
+        Banner cardBanner = notes.bannerFor(complaint.getComplaintId());
 
         Label title = Widgets.label(complaint.getCategory().label() + "  -  " + view.workerName(), "section-title");
         HBox top = new HBox(12, title, Widgets.spacer(), ComplaintViews.statusChip(complaint.getStatus()));
@@ -191,7 +177,7 @@ public class VerifierComplaintsPage {
         Outcome<ComplaintResponse> result = ctx.app().representativeComplaints()
             .respond(ctx.userId(), complaint.getComplaintId(), answer.text());
         if (result.isOk()) {
-            savedNotes.put(complaint.getComplaintId(), "Answer sent. The worker has been notified.");
+            notes.remember(complaint.getComplaintId(), "Answer sent. The worker has been notified.");
             load();
         } else {
             answer.setError(result.message());
@@ -206,25 +192,17 @@ public class VerifierComplaintsPage {
             answer.setError("You typed an answer that is not sent yet. Send it first, or clear the box, then resolve.");
             return;
         }
-        if (!confirmResolve(source)) {
+        if (!Dialogs.confirm(source, "Resolve this complaint?",
+                "A resolved complaint is closed and can no longer be answered. The worker will be told. Continue?")) {
             return;
         }
         Outcome<Complaint> result = ctx.app().representativeComplaints().resolve(ctx.userId(), complaint.getComplaintId());
         if (result.isOk()) {
-            savedNotes.put(complaint.getComplaintId(), "Complaint resolved. The worker has been notified.");
+            notes.remember(complaint.getComplaintId(), "Complaint resolved. The worker has been notified.");
             load();
         } else {
             cardBanner.showError(result.problems());
         }
     }
 
-    /** Resolving closes the complaint for good, so ask once. */
-    private boolean confirmResolve(Node source) {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
-            "A resolved complaint is closed and can no longer be answered. The worker will be told. Continue?",
-            ButtonType.YES, ButtonType.NO);
-        alert.setHeaderText("Resolve this complaint?");
-        alert.initOwner(Pages.window(source));
-        return alert.showAndWait().filter(button -> button == ButtonType.YES).isPresent();
-    }
 }

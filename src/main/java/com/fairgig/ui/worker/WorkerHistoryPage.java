@@ -6,7 +6,6 @@ import com.fairgig.model.VerificationReview;
 import com.fairgig.model.VerificationStatus;
 import com.fairgig.repository.EarningsFilter;
 import com.fairgig.service.earnings.EarningStatusView;
-import com.fairgig.service.evidence.EvidenceFileValidator;
 import com.fairgig.service.platform.WorkerPlatformInfo;
 import com.fairgig.ui.Banner;
 import com.fairgig.ui.ChipGroup;
@@ -17,8 +16,6 @@ import com.fairgig.ui.Pages;
 import com.fairgig.ui.SimpleTable;
 import com.fairgig.ui.UiParse;
 import com.fairgig.ui.Widgets;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -32,7 +29,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-import javafx.stage.FileChooser;
 
 /**
  * "History" tab (FR-15, FR-16, FR-17): all of the worker's earnings with their verification
@@ -228,24 +224,12 @@ public class WorkerHistoryPage {
 
     private void resubmit(EarningStatusView row, Node source) {
         banner.hide();
-        FileChooser chooser = new FileChooser();
-        chooser.setTitle("Choose new evidence (PNG, JPG or PDF)");
-        chooser.getExtensionFilters().add(
-            new FileChooser.ExtensionFilter("Images and PDF", "*.png", "*.jpg", "*.jpeg", "*.pdf"));
-        java.io.File file = chooser.showOpenDialog(Pages.window(source));
-        if (file == null) {
+        Path path = EvidenceFiles.choose(source, "Choose new evidence (PNG, JPG or PDF)");
+        if (path == null) {
             return;
         }
-        Path path = file.toPath();
-        byte[] bytes;
-        try {
-            if (Files.size(path) > EvidenceFileValidator.MAX_BYTES) {
-                banner.showError("This file is too large. The limit is 5 MB. Please choose a smaller file or compress it.");
-                return;
-            }
-            bytes = Files.readAllBytes(path);
-        } catch (IOException e) {
-            banner.showError("The file could not be read. Please check that it is not open in another program.");
+        byte[] bytes = EvidenceFiles.readChecked(path, banner);
+        if (bytes == null) {
             return;
         }
         Outcome<Evidence> result = ctx.app().worker().uploadEvidence(

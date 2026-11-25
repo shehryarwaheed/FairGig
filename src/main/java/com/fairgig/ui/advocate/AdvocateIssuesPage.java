@@ -5,6 +5,7 @@ import com.fairgig.model.Complaint;
 import com.fairgig.service.complaint.ComplaintView;
 import com.fairgig.service.complaint.IssueSummary;
 import com.fairgig.ui.Banner;
+import com.fairgig.ui.Buttons;
 import com.fairgig.ui.ComplaintViews;
 import com.fairgig.ui.Fmt;
 import com.fairgig.ui.PageContext;
@@ -18,7 +19,6 @@ import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
 /**
@@ -107,9 +107,7 @@ public class AdvocateIssuesPage {
         VBox info = new VBox(4, what, text);
         HBox.setHgrow(info, javafx.scene.layout.Priority.ALWAYS);
 
-        Button remove = Widgets.secondaryButton("Remove from issue");
-        remove.setMaxWidth(Region.USE_PREF_SIZE);
-        remove.setStyle("-fx-padding: 5 12 5 12; -fx-font-size: 12px;");
+        Button remove = Buttons.small("Remove from issue");
         remove.setOnAction(e -> {
             banner.hide();
             Outcome<Void> result = ctx.app().advocateComplaints().assignToIssue(ctx.userId(), complaint.getComplaintId(), null);

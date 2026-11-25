@@ -8,24 +8,24 @@ import com.fairgig.model.ComplaintTag;
 import com.fairgig.service.complaint.ComplaintView;
 import com.fairgig.service.complaint.IssueSummary;
 import com.fairgig.ui.Banner;
+import com.fairgig.ui.Buttons;
+import com.fairgig.ui.CardNotes;
 import com.fairgig.ui.ChipGroup;
+import com.fairgig.ui.ComplaintViews.StatusFilter;
 import com.fairgig.ui.ComplaintViews;
+import com.fairgig.ui.Dialogs;
 import com.fairgig.ui.FormField;
 import com.fairgig.ui.PageContext;
 import com.fairgig.ui.Pages;
 import com.fairgig.ui.Widgets;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextInputControl;
@@ -42,12 +42,8 @@ import javafx.scene.layout.VBox;
  */
 public class AdvocateComplaintsPage {
 
-    private record StatusFilter(ComplaintStatus status, String label) { }
-
     /** A null platform name means "all platforms". */
     private record PlatformFilter(String platformName, String label) { }
-
-    private static final String SMALL = "-fx-padding: 5 12 5 12; -fx-font-size: 12px;";
 
     private final PageContext ctx;
     private final Banner banner = new Banner();
@@ -60,7 +56,7 @@ public class AdvocateComplaintsPage {
     private final Button createIssue = Widgets.primaryButton("Create issue");
     private final VBox listHolder = new VBox(14);
     private final Set<Integer> selected = new LinkedHashSet<>();
-    private final Map<Integer, String> savedNotes = new HashMap<>();
+    private final CardNotes notes = new CardNotes();
 
     private List<ComplaintView> loaded = List.of();
     private List<IssueSummary> issues = List.of();
@@ -117,11 +113,7 @@ public class AdvocateComplaintsPage {
         StatusFilter keepStatus = statusChips.selected();
         PlatformFilter keepPlatform = platformChips.selected();
 
-        List<StatusFilter> statuses = new ArrayList<>();
-        statuses.add(new StatusFilter(null, "All"));
-        for (ComplaintStatus status : ComplaintStatus.values()) {
-            statuses.add(new StatusFilter(status, status.label()));
-        }
+        List<StatusFilter> statuses = StatusFilter.options();
         List<PlatformFilter> platforms = new ArrayList<>();
         platforms.add(new PlatformFilter(null, "All platforms"));
         new TreeSet<>(loaded.stream().map(ComplaintView::platformName).toList())
@@ -141,7 +133,7 @@ public class AdvocateComplaintsPage {
         StatusFilter status = statusChips.selected();
         PlatformFilter platform = platformChips.selected();
         List<ComplaintView> shown = loaded.stream()
-            .filter(v -> status == null || status.status() == null || v.complaint().getStatus() == status.status())
+            .filter(v -> status == null || status.accepts(v.complaint()))
             .filter(v -> platform == null || platform.platformName() == null
                 || v.platformName().equals(platform.platformName()))
             .toList();
@@ -193,11 +185,7 @@ public class AdvocateComplaintsPage {
     private Node card(ComplaintView view) {
         Complaint complaint = view.complaint();
         int id = complaint.getComplaintId();
-        Banner cardBanner = new Banner();
-        String note = savedNotes.remove(id);
-        if (note != null) {
-            cardBanner.showSuccess(note);
-        }
+        Banner cardBanner = notes.bannerFor(id);
 
         CheckBox pick = new CheckBox("Group");
         pick.setStyle("-fx-text-fill: -muted; -fx-font-size: 12px;");
@@ -253,9 +241,7 @@ public class AdvocateComplaintsPage {
         pills.setAlignment(Pos.CENTER_LEFT);
         pills.getChildren().add(Widgets.label("Tags:", "muted"));
         for (ComplaintTag tag : view.tags()) {
-            Button pill = Widgets.secondaryButton(tag.getName() + "  ×");     // click to remove
-            pill.setMaxWidth(Region.USE_PREF_SIZE);
-            pill.setStyle(SMALL);
+            Button pill = Buttons.small(tag.getName() + "  ×");     // click to remove
             pill.setOnAction(e -> removeTag(complaintId, tag, cardBanner));
             pills.getChildren().add(pill);
         }
@@ -269,9 +255,7 @@ public class AdvocateComplaintsPage {
         for (ComplaintTag tag : allTags) {
             boolean already = view.tags().stream().anyMatch(t -> t.getTagId().equals(tag.getTagId()));
             if (!already) {
-                Button add = Widgets.secondaryButton("+ " + tag.getName());
-                add.setMaxWidth(Region.USE_PREF_SIZE);
-                add.setStyle(SMALL);
+                Button add = Buttons.small("+ " + tag.getName());
                 add.setOnAction(e -> addTag(complaintId, tag.getName(), cardBanner));
                 suggestions.getChildren().add(add);
             }
@@ -280,9 +264,7 @@ public class AdvocateComplaintsPage {
         HBox newTag = Widgets.field("list", "New tag, for example payment-delay", false);
         TextInputControl input = Widgets.input(newTag);
         newTag.setMaxWidth(340);
-        Button addNew = Widgets.secondaryButton("Add tag");
-        addNew.setMaxWidth(Region.USE_PREF_SIZE);
-        addNew.setStyle(SMALL);
+        Button addNew = Buttons.small("Add tag");
         addNew.setOnAction(e -> addTag(complaintId, input.getText(), cardBanner));
         if (input instanceof javafx.scene.control.TextField field) {
             field.setOnAction(e -> addTag(complaintId, field.getText(), cardBanner));     // Enter adds the tag too
@@ -302,7 +284,7 @@ public class AdvocateComplaintsPage {
         cardBanner.hide();
         Outcome<ComplaintTag> result = ctx.app().advocateComplaints().tag(ctx.userId(), complaintId, name);
         if (result.isOk()) {
-            savedNotes.put(complaintId, "Tag \"" + result.value().getName() + "\" added.");
+            notes.remember(complaintId, "Tag \"" + result.value().getName() + "\" added.");
             load();
         } else {
             cardBanner.showError(result.problems());
@@ -313,7 +295,7 @@ public class AdvocateComplaintsPage {
         cardBanner.hide();
         Outcome<Void> result = ctx.app().advocateComplaints().removeTag(ctx.userId(), complaintId, tag.getTagId());
         if (result.isOk()) {
-            savedNotes.put(complaintId, "Tag \"" + tag.getName() + "\" removed.");
+            notes.remember(complaintId, "Tag \"" + tag.getName() + "\" removed.");
             load();
         } else {
             cardBanner.showError(result.problems());
@@ -330,17 +312,13 @@ public class AdvocateComplaintsPage {
 
         if (complaint.getClusterId() != null) {
             row.getChildren().add(Widgets.label("Common issue: " + view.issueTitle(), "label"));
-            Button leave = Widgets.secondaryButton("Remove from issue");
-            leave.setMaxWidth(Region.USE_PREF_SIZE);
-            leave.setStyle(SMALL);
+            Button leave = Buttons.small("Remove from issue");
             leave.setOnAction(e -> assign(complaintId, null, "Removed from the common issue.", cardBanner));
             row.getChildren().add(leave);
         } else if (!issues.isEmpty()) {
             row.getChildren().add(Widgets.label("Add to an existing issue:", "muted"));
             for (IssueSummary issue : issues) {
-                Button join = Widgets.secondaryButton(issue.cluster().getTitle());
-                join.setMaxWidth(Region.USE_PREF_SIZE);
-                join.setStyle(SMALL);
+                Button join = Buttons.small(issue.cluster().getTitle());
                 join.setOnAction(e -> assign(complaintId, issue.cluster().getClusterId(),
                     "Added to \"" + issue.cluster().getTitle() + "\".", cardBanner));
                 row.getChildren().add(join);
@@ -355,7 +333,7 @@ public class AdvocateComplaintsPage {
         cardBanner.hide();
         Outcome<Void> result = ctx.app().advocateComplaints().assignToIssue(ctx.userId(), complaintId, clusterId);
         if (result.isOk()) {
-            savedNotes.put(complaintId, successNote);
+            notes.remember(complaintId, successNote);
             load();
         } else {
             cardBanner.showError(result.problems());
@@ -368,7 +346,7 @@ public class AdvocateComplaintsPage {
         cardBanner.hide();
         Outcome<Complaint> result = ctx.app().advocateComplaints().escalate(ctx.userId(), complaint.getComplaintId());
         if (result.isOk()) {
-            savedNotes.put(complaint.getComplaintId(), "Complaint escalated. The worker has been notified.");
+            notes.remember(complaint.getComplaintId(), "Complaint escalated. The worker has been notified.");
             load();
         } else {
             cardBanner.showError(result.problems());
@@ -377,17 +355,13 @@ public class AdvocateComplaintsPage {
 
     private void resolve(Complaint complaint, Banner cardBanner, Node source) {
         cardBanner.hide();
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
-            "A resolved complaint is closed and can no longer change. The worker will be told. Continue?",
-            ButtonType.YES, ButtonType.NO);
-        alert.setHeaderText("Resolve this complaint?");
-        alert.initOwner(Pages.window(source));
-        if (alert.showAndWait().filter(b -> b == ButtonType.YES).isEmpty()) {
+        if (!Dialogs.confirm(source, "Resolve this complaint?",
+                "A resolved complaint is closed and can no longer change. The worker will be told. Continue?")) {
             return;
         }
         Outcome<Complaint> result = ctx.app().advocateComplaints().resolveAsAdvocate(ctx.userId(), complaint.getComplaintId());
         if (result.isOk()) {
-            savedNotes.put(complaint.getComplaintId(), "Complaint resolved. The worker has been notified.");
+            notes.remember(complaint.getComplaintId(), "Complaint resolved. The worker has been notified.");
             load();
         } else {
             cardBanner.showError(result.problems());
