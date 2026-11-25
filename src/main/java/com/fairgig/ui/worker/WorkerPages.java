@@ -16,6 +16,7 @@ public final class WorkerPages {
     public static final String IMPORT_CSV = "Import CSV";
     public static final String EVIDENCE = "Evidence";
     public static final String COMPLAINTS = "Complaints";
+    public static final String COMMISSION = "Commission History";
 
     private WorkerPages() {}
 
@@ -25,6 +26,7 @@ public final class WorkerPages {
             new NavItem(PLATFORMS, "Register and manage the platforms you work on.", "layers", false),
             new NavItem(EARNINGS, "Log an earning and see your latest entries.", "money", false),
             new NavItem(HISTORY, "Your earnings with their status, filters and re-upload.", "list", false),
+            new NavItem(COMMISSION, "See how each platform's commission rate changed over time.", "percent", false),
             new NavItem(IMPORT_CSV,"Bring many earnings in at once and fix invalid rows.", "upload", false),
             new NavItem(EVIDENCE, "Upload screenshots or statements to back up your earnings.", "doc", false),
             new NavItem("Analytics", "Income, deductions, trends and the city-wide median.", "chart", false),
