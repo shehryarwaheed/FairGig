@@ -5,6 +5,7 @@ import com.fairgig.ui.verifier.VerifierHistoryPage;
 import com.fairgig.ui.verifier.VerifierHomePage;
 import com.fairgig.ui.verifier.VerifierPages;
 import com.fairgig.ui.verifier.VerifierPendingPage;
+import com.fairgig.ui.worker.WorkerComplaintsPage;
 import com.fairgig.ui.worker.WorkerCsvPage;
 import com.fairgig.ui.worker.WorkerEarningsPage;
 import com.fairgig.ui.worker.WorkerEvidencePage;
@@ -44,6 +45,9 @@ public final class PageFactory {
                     }
                     case WorkerPages.EARNINGS -> {
                         return new WorkerEarningsPage(ctx).build();
+                    }
+                    case WorkerPages.COMPLAINTS -> {
+                        return new WorkerComplaintsPage(ctx).build();
                     }
                     case WorkerPages.HISTORY -> {
                         return new WorkerHistoryPage(ctx).build();

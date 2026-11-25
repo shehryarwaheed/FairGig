@@ -15,6 +15,7 @@ public final class WorkerPages {
     public static final String HISTORY = "History";
     public static final String IMPORT_CSV = "Import CSV";
     public static final String EVIDENCE = "Evidence";
+    public static final String COMPLAINTS = "Complaints";
 
     private WorkerPages() {}
 
@@ -28,7 +29,7 @@ public final class WorkerPages {
             new NavItem(EVIDENCE, "Upload screenshots or statements to back up your earnings.", "doc", false),
             new NavItem("Analytics", "Income, deductions, trends and the city-wide median.", "chart", false),
             new NavItem("Reports", "Monthly and yearly reports and your income certificate.", "trend", false),
-            new NavItem("Complaints", "File a complaint and track its progress.", "flag", false),
+            new NavItem(COMPLAINTS, "File a complaint and track its progress.", "flag", false),
             new NavItem("Community", "Anonymous posts, comments and likes from fellow workers.", "chat", false),
             new NavItem("Rate Insights", "Share rates and see anonymized averages per platform.", "percent", false)
         );
