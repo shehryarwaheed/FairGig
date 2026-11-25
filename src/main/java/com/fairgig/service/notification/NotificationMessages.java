@@ -30,6 +30,11 @@ public final class NotificationMessages {
         return "Your complaint about " + platformName + " has a new response.";
     }
 
+    /** To the worker when an advocate escalates their complaint. */
+    public static String complaintEscalated(String platformName) {
+        return "Your complaint about " + platformName + " was escalated to an advocate.";
+    }
+
     /** To the worker when their complaint is resolved. */
     public static String complaintResolved(String platformName) {
         return "Your complaint about " + platformName + " was resolved.";

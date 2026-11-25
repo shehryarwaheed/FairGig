@@ -235,6 +235,225 @@ public final class Fakes {
         }
     }
 
+    // ---------------------------------------------------------------- complaints
+
+    public static class FakeComplaints implements com.fairgig.repository.ComplaintRepository {
+        public final Map<Integer, com.fairgig.model.Complaint> items = new LinkedHashMap<>();
+        public final List<com.fairgig.model.ComplaintResponse> responses = new ArrayList<>();
+        private int nextId = 1;
+        private int nextResponseId = 1;
+
+        @Override
+        public com.fairgig.model.Complaint save(com.fairgig.model.Complaint complaint) {
+            complaint.setComplaintId(nextId++);
+            complaint.setCreatedAt(LocalDateTime.of(2026, 11, 20, 10, 0).plusMinutes(complaint.getComplaintId()));
+            items.put(complaint.getComplaintId(), complaint);
+            return complaint;
+        }
+
+        @Override
+        public com.fairgig.model.Complaint save(Connection connection, com.fairgig.model.Complaint complaint) {
+            return save(complaint);
+        }
+
+        @Override
+        public Optional<com.fairgig.model.Complaint> findById(int complaintId) {
+            return Optional.ofNullable(items.get(complaintId));
+        }
+
+        private List<com.fairgig.model.Complaint> newestFirst(java.util.function.Predicate<com.fairgig.model.Complaint> filter) {
+            return items.values().stream().filter(filter)
+                .sorted(Comparator.comparing(com.fairgig.model.Complaint::getCreatedAt).reversed()).toList();
+        }
+
+        @Override
+        public List<com.fairgig.model.Complaint> findByWorker(int workerId) {
+            return newestFirst(c -> c.getWorkerId() == workerId);
+        }
+
+        @Override
+        public List<com.fairgig.model.Complaint> findByPlatform(int platformId) {
+            return newestFirst(c -> c.getPlatformId() == platformId);
+        }
+
+        @Override
+        public List<com.fairgig.model.Complaint> findAll() {
+            return newestFirst(c -> true);
+        }
+
+        @Override
+        public List<com.fairgig.model.Complaint> findByCluster(int clusterId) {
+            return newestFirst(c -> c.getClusterId() != null && c.getClusterId() == clusterId);
+        }
+
+        @Override
+        public boolean markEscalated(Connection connection, int complaintId,
+                                     com.fairgig.model.ComplaintStatus expected, int advocateId) {
+            com.fairgig.model.Complaint c = items.get(complaintId);
+            if (c == null || c.getStatus() != expected) {
+                return false;
+            }
+            c.setStatus(com.fairgig.model.ComplaintStatus.ESCALATED);
+            c.setEscalatedAt(LocalDateTime.of(2026, 11, 24, 12, 0));
+            c.setHandledByAdvocateId(advocateId);
+            return true;
+        }
+
+        @Override
+        public boolean markResolved(Connection connection, int complaintId, com.fairgig.model.ComplaintStatus expected,
+                                    Integer representativeId, Integer advocateId) {
+            com.fairgig.model.Complaint c = items.get(complaintId);
+            if (c == null || c.getStatus() != expected) {
+                return false;
+            }
+            c.setStatus(com.fairgig.model.ComplaintStatus.RESOLVED);
+            c.setResolvedAt(LocalDateTime.of(2026, 11, 24, 13, 0));
+            if (representativeId != null) {
+                c.setResolvedByRepId(representativeId);
+            }
+            if (advocateId != null) {
+                c.setHandledByAdvocateId(advocateId);
+            }
+            return true;
+        }
+
+        @Override
+        public boolean assignCluster(Connection connection, int complaintId, Integer clusterId) {
+            com.fairgig.model.Complaint c = items.get(complaintId);
+            if (c == null) {
+                return false;
+            }
+            c.setClusterId(clusterId);
+            return true;
+        }
+
+        @Override
+        public com.fairgig.model.ComplaintResponse saveResponse(Connection connection,
+                                                               com.fairgig.model.ComplaintResponse response) {
+            response.setResponseId(nextResponseId++);
+            response.setRespondedAt(LocalDateTime.of(2026, 11, 24, 11, 0).plusMinutes(response.getResponseId()));
+            responses.add(response);
+            return response;
+        }
+
+        @Override
+        public List<com.fairgig.model.ComplaintResponse> findResponses(int complaintId) {
+            return responses.stream().filter(r -> r.getComplaintId() == complaintId).toList();
+        }
+    }
+
+    public static class FakeClusters implements com.fairgig.repository.ComplaintClusterRepository {
+        public final Map<Integer, com.fairgig.model.ComplaintCluster> items = new LinkedHashMap<>();
+
+        @Override
+        public com.fairgig.model.ComplaintCluster save(com.fairgig.model.ComplaintCluster cluster) {
+            cluster.setClusterId(items.size() + 1);
+            cluster.setCreatedAt(LocalDateTime.of(2026, 11, 24, 9, 0).plusMinutes(cluster.getClusterId()));
+            items.put(cluster.getClusterId(), cluster);
+            return cluster;
+        }
+
+        @Override
+        public com.fairgig.model.ComplaintCluster save(Connection connection, com.fairgig.model.ComplaintCluster cluster) {
+            return save(cluster);
+        }
+
+        @Override
+        public Optional<com.fairgig.model.ComplaintCluster> findById(int clusterId) {
+            return Optional.ofNullable(items.get(clusterId));
+        }
+
+        @Override
+        public List<com.fairgig.model.ComplaintCluster> findAll() {
+            return items.values().stream()
+                .sorted(Comparator.comparing(com.fairgig.model.ComplaintCluster::getCreatedAt).reversed()).toList();
+        }
+    }
+
+    public static class FakeTags implements com.fairgig.repository.ComplaintTagRepository {
+        public final Map<Integer, com.fairgig.model.ComplaintTag> items = new LinkedHashMap<>();
+        public final Map<Integer, java.util.Set<Integer>> onComplaint = new LinkedHashMap<>();
+
+        @Override
+        public com.fairgig.model.ComplaintTag save(com.fairgig.model.ComplaintTag tag) {
+            tag.setTagId(items.size() + 1);
+            items.put(tag.getTagId(), tag);
+            return tag;
+        }
+
+        @Override
+        public com.fairgig.model.ComplaintTag save(Connection connection, com.fairgig.model.ComplaintTag tag) {
+            return save(tag);
+        }
+
+        @Override
+        public Optional<com.fairgig.model.ComplaintTag> findByName(String name) {
+            return items.values().stream().filter(t -> t.getName().equalsIgnoreCase(name)).findFirst();
+        }
+
+        @Override
+        public List<com.fairgig.model.ComplaintTag> findAll() {
+            return items.values().stream().sorted(Comparator.comparing(com.fairgig.model.ComplaintTag::getName)).toList();
+        }
+
+        @Override
+        public List<com.fairgig.model.ComplaintTag> findByComplaint(int complaintId) {
+            return onComplaint.getOrDefault(complaintId, java.util.Set.of()).stream()
+                .map(items::get).sorted(Comparator.comparing(com.fairgig.model.ComplaintTag::getName)).toList();
+        }
+
+        @Override
+        public Map<Integer, List<com.fairgig.model.ComplaintTag>> findAllByComplaint() {
+            Map<Integer, List<com.fairgig.model.ComplaintTag>> all = new LinkedHashMap<>();
+            onComplaint.keySet().forEach(id -> all.put(id, findByComplaint(id)));
+            return all;
+        }
+
+        @Override
+        public boolean addToComplaint(Connection connection, int complaintId, int tagId) {
+            return onComplaint.computeIfAbsent(complaintId, id -> new java.util.LinkedHashSet<>()).add(tagId);
+        }
+
+        @Override
+        public boolean removeFromComplaint(Connection connection, int complaintId, int tagId) {
+            return onComplaint.getOrDefault(complaintId, new java.util.LinkedHashSet<>()).remove(tagId);
+        }
+    }
+
+    public static class FakeWorkerPlatforms implements com.fairgig.repository.WorkerPlatformRepository {
+        private final java.util.Set<String> links = new java.util.HashSet<>();
+
+        public FakeWorkerPlatforms with(int workerId, int platformId) {
+            links.add(workerId + ":" + platformId);
+            return this;
+        }
+
+        @Override
+        public boolean exists(int workerId, int platformId) {
+            return links.contains(workerId + ":" + platformId);
+        }
+
+        @Override
+        public void add(com.fairgig.model.WorkerPlatform link) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void update(com.fairgig.model.WorkerPlatform link) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void remove(int workerId, int platformId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public List<com.fairgig.model.WorkerPlatform> findByWorker(int workerId) {
+            throw new UnsupportedOperationException();
+        }
+    }
+
     // ---------------------------------------------------------------- file storage
 
     /** Keeps "files" in memory and remembers which were removed again. */

@@ -3,6 +3,9 @@ package com.fairgig.controller;
 import com.fairgig.database.DatabaseConnection;
 import com.fairgig.proxy.AccessProxy;
 import com.fairgig.repository.CommissionRateRepository;
+import com.fairgig.repository.ComplaintClusterRepository;
+import com.fairgig.repository.ComplaintRepository;
+import com.fairgig.repository.ComplaintTagRepository;
 import com.fairgig.repository.CsvImportRepository;
 import com.fairgig.repository.EarningsRepository;
 import com.fairgig.repository.EvidenceRepository;
@@ -12,6 +15,9 @@ import com.fairgig.repository.ReviewRepository;
 import com.fairgig.repository.UserRepository;
 import com.fairgig.repository.WorkerPlatformRepository;
 import com.fairgig.repository.jdbc.JdbcCommissionRateRepository;
+import com.fairgig.repository.jdbc.JdbcComplaintClusterRepository;
+import com.fairgig.repository.jdbc.JdbcComplaintRepository;
+import com.fairgig.repository.jdbc.JdbcComplaintTagRepository;
 import com.fairgig.repository.jdbc.JdbcCsvImportRepository;
 import com.fairgig.repository.jdbc.JdbcEarningsRepository;
 import com.fairgig.repository.jdbc.JdbcEvidenceRepository;
@@ -24,6 +30,8 @@ import com.fairgig.service.auth.AuthService;
 import com.fairgig.service.auth.DefaultAuthService;
 import com.fairgig.service.commission.CommissionService;
 import com.fairgig.service.commission.DefaultCommissionService;
+import com.fairgig.service.complaint.ComplaintService;
+import com.fairgig.service.complaint.DefaultComplaintService;
 import com.fairgig.service.csv.CsvImportService;
 import com.fairgig.service.csv.DefaultCsvImportService;
 import com.fairgig.service.earnings.DefaultEarningsHistoryService;
@@ -64,6 +72,9 @@ public final class AppContext {
     private final NotificationRepository notificationRepository = new JdbcNotificationRepository();
     private final ReviewRepository reviewRepository = new JdbcReviewRepository();
     private final CommissionRateRepository commissionRateRepository = new JdbcCommissionRateRepository();
+    private final ComplaintRepository complaintRepository = new JdbcComplaintRepository();
+    private final ComplaintClusterRepository complaintClusterRepository = new JdbcComplaintClusterRepository();
+    private final ComplaintTagRepository complaintTagRepository = new JdbcComplaintTagRepository();
     private final EvidenceStorage storage = LocalEvidenceStorage.fromEnv();
 
     // ---- internal helpers (not proxied: only trusted service code uses them)
@@ -81,6 +92,7 @@ public final class AppContext {
     private final VerificationService verification;
     private final EarningsHistoryService history;
     private final CommissionService commission;
+    private final ComplaintService complaints;
 
     // ---- controllers (what the screens use)
     private final AuthController authController;
@@ -89,6 +101,7 @@ public final class AppContext {
     private final VerificationController verificationController;
     private final EarningsHistoryController historyController;
     private final CommissionController commissionController;
+    private final ComplaintController complaintController;
 
     private AppContext() {
         auth = AccessProxy.wrap(AuthService.class, new DefaultAuthService(users, platformRepository));
@@ -124,6 +137,12 @@ public final class AppContext {
         commission = AccessProxy.wrap(CommissionService.class,
             new DefaultCommissionService(commissionRateRepository, platformRepository));
         commissionController = new CommissionController(commission);
+
+        // complaints for workers, representatives and advocates (FR-30 to FR-33)
+        complaints = AccessProxy.wrap(ComplaintService.class,
+            new DefaultComplaintService(complaintRepository, complaintClusterRepository, complaintTagRepository,
+                earningsRepository, platformRepository, workerPlatformRepository, users, notificationSender));
+        complaintController = new ComplaintController(complaints);
     }
 
     /** The shared instance (created on first use). */
@@ -161,6 +180,10 @@ public final class AppContext {
 
     public CommissionController commission() {
         return commissionController;
+    }
+
+    public ComplaintController complaints() {
+        return complaintController;
     }
 
     /** For other services that need to send notifications (FR-41). Internal use only. */
