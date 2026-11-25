@@ -1,7 +1,9 @@
 package com.fairgig.ui.verifier;
 
 import com.fairgig.controller.Outcome;
+import com.fairgig.model.ComplaintStatus;
 import com.fairgig.model.ReviewDecision;
+import com.fairgig.service.complaint.ComplaintView;
 import com.fairgig.service.verification.ReviewCase;
 import com.fairgig.service.verification.ReviewEntry;
 import com.fairgig.ui.Banner;
@@ -52,6 +54,11 @@ public class VerifierHomePage {
         }
         List<ReviewEntry> decisions = history.isOk() ? history.value() : List.of();
 
+        Outcome<List<ComplaintView>> complaints = ctx.app().complaints().platformComplaints(platformId);
+        long openComplaints = complaints.isOk()
+            ? complaints.value().stream().filter(c -> c.complaint().getStatus() != ComplaintStatus.RESOLVED).count()
+            : 0;
+
         HBox tiles = new HBox(16,
             Widgets.infoTile("pending", "amber", "Pending earnings",
                 new SimpleStringProperty(String.valueOf(pending.isOk() ? pending.value().size() : 0)),
@@ -64,7 +71,10 @@ public class VerifierHomePage {
                 "Decisions with an explanation"),
             Widgets.infoTile("list", "blue", "Unverifiable",
                 new SimpleStringProperty(String.valueOf(count(decisions, ReviewDecision.UNVERIFIABLE))),
-                "Could not be confirmed"));
+                "Could not be confirmed"),
+            Widgets.infoTile("chat", "violet", "Open complaints",
+                new SimpleStringProperty(String.valueOf(openComplaints)),
+                "Submitted or escalated"));
         tiles.getChildren().forEach(t -> {
             HBox.setHgrow(t, Priority.ALWAYS);
             ((VBox) t).setMaxWidth(Double.MAX_VALUE);
@@ -73,6 +83,7 @@ public class VerifierHomePage {
 
         FlowPane actions = new FlowPane(12, 12,
             action("Review pending earnings", VerifierPages.PENDING_REVIEWS, true),
+            action("Answer complaints", VerifierPages.COMPLAINTS, false),
             action("See review history", VerifierPages.REVIEW_HISTORY, false));
         page.getChildren().add(Pages.section("Quick actions", actions));
 
