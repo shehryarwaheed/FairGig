@@ -8,13 +8,18 @@ import java.util.List;
 /** Tabs and home tiles of the Advocate role. */
 public final class AdvocatePages {
 
+    // Tab titles (the page router in ui.PageFactory matches on these)
+    public static final String HOME = "Home";
+    public static final String COMPLAINTS = "Complaints";
+    public static final String ISSUE_CLUSTERS = "Issue Clusters";
+
     private AdvocatePages() {}
 
     public static List<NavItem> nav() {
         return List.of(
-            new NavItem("Home", "The big picture across all platforms.", "home", true),
-            new NavItem("Complaints", "View, tag, escalate and resolve every complaint.", "flag", false),
-            new NavItem("Issue Clusters", "Group similar complaints into one common issue.", "layers", false),
+            new NavItem(HOME, "The big picture across all platforms.", "home", true),
+            new NavItem(COMPLAINTS, "View, tag, escalate and resolve every complaint.", "flag", false),
+            new NavItem(ISSUE_CLUSTERS, "Group similar complaints into one common issue.", "layers", false),
             new NavItem("Moderation", "Remove inappropriate community posts with a reason.", "shield", false),
             new NavItem("Analytics", "Income by city zone and the most common complaint types.", "chart", false),
             new NavItem("Commission Trends", "Compare commission rates across platforms.", "trend", false)

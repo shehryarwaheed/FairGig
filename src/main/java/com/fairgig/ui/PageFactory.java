@@ -1,5 +1,8 @@
 package com.fairgig.ui;
 
+import com.fairgig.ui.advocate.AdvocateComplaintsPage;
+import com.fairgig.ui.advocate.AdvocateIssuesPage;
+import com.fairgig.ui.advocate.AdvocatePages;
 import com.fairgig.ui.verifier.VerifierCommissionPage;
 import com.fairgig.ui.verifier.VerifierComplaintsPage;
 import com.fairgig.ui.verifier.VerifierHistoryPage;
@@ -82,7 +85,17 @@ public final class PageFactory {
                     default -> { /* every representative tab is built */ }
                 }
             }
-            case ADVOCATE -> { /* complaints, moderation, analytics: placeholders for now */ }
+            case ADVOCATE -> {
+                switch (item.title()) {
+                    case AdvocatePages.COMPLAINTS -> {
+                        return new AdvocateComplaintsPage(ctx).build();
+                    }
+                    case AdvocatePages.ISSUE_CLUSTERS -> {
+                        return new AdvocateIssuesPage(ctx).build();
+                    }
+                    default -> { /* home, moderation and analytics: placeholders for now */ }
+                }
+            }
             default -> { }
         }
         return PlaceholderPages.create(ctx.role(), item);
