@@ -2,43 +2,35 @@ package com.fairgig.ui.advocate;
 
 import com.fairgig.controller.Outcome;
 import com.fairgig.model.Complaint;
-import com.fairgig.model.ComplaintCluster;
 import com.fairgig.model.ComplaintStatus;
 import com.fairgig.model.ComplaintTag;
 import com.fairgig.service.complaint.ComplaintView;
 import com.fairgig.service.complaint.IssueSummary;
 import com.fairgig.ui.Banner;
-import com.fairgig.ui.Buttons;
 import com.fairgig.ui.CardNotes;
 import com.fairgig.ui.ChipGroup;
-import com.fairgig.ui.ComplaintViews.StatusFilter;
 import com.fairgig.ui.ComplaintViews;
+import com.fairgig.ui.ComplaintViews.StatusFilter;
 import com.fairgig.ui.Dialogs;
-import com.fairgig.ui.FormField;
 import com.fairgig.ui.PageContext;
 import com.fairgig.ui.Pages;
 import com.fairgig.ui.Widgets;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.TreeSet;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
-import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.TextInputControl;
-import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
 /**
- * "Complaints" tab for advocates (FR-33): every complaint of every platform. An advocate can tag
- * complaints, tick several and group them into a common issue, add a complaint to an existing
- * issue, escalate a Submitted complaint and resolve any open one. The worker is notified of
- * escalation and resolution. The State pattern decides which moves are possible.
+ * "Complaints" tab for advocates (FR-33): every complaint of every platform, filtered by status
+ * and platform. This page lays out the list and the card and handles escalate and resolve; the
+ * tags, the common-issue membership and the grouping panel are their own small classes.
+ * The worker is notified of escalation and resolution. The State pattern decides which moves are possible.
  */
 public class AdvocateComplaintsPage {
 
@@ -47,16 +39,13 @@ public class AdvocateComplaintsPage {
 
     private final PageContext ctx;
     private final Banner banner = new Banner();
-    private final Banner groupBanner = new Banner();
     private final ChipGroup<StatusFilter> statusChips = new ChipGroup<>(StatusFilter::label);
     private final ChipGroup<PlatformFilter> platformChips = new ChipGroup<>(PlatformFilter::label);
-    private final FormField issueTitle = new FormField("Title of the common issue", "layers", "Sudden commission increase", false);
-    private final FormField issueDescription = new FormField("Short description (optional)", "doc", "What the complaints have in common", false);
-    private final Label selectedLabel = Widgets.label("", "muted");
-    private final Button createIssue = Widgets.primaryButton("Create issue");
     private final VBox listHolder = new VBox(14);
-    private final Set<Integer> selected = new LinkedHashSet<>();
     private final CardNotes notes = new CardNotes();
+    private final IssueGroupingPanel grouping;
+    private final TagEditor tagEditor;
+    private final IssueMembershipRow issueRow;
 
     private List<ComplaintView> loaded = List.of();
     private List<IssueSummary> issues = List.of();
@@ -64,25 +53,16 @@ public class AdvocateComplaintsPage {
 
     public AdvocateComplaintsPage(PageContext ctx) {
         this.ctx = ctx;
+        this.grouping = new IssueGroupingPanel(ctx, this::load);
+        this.tagEditor = new TagEditor(ctx, notes, this::load);
+        this.issueRow = new IssueMembershipRow(ctx, notes, this::load);
     }
 
     public Node build() {
         VBox page = Pages.page();
-
-        createIssue.setMaxWidth(Region.USE_PREF_SIZE);
-        createIssue.setOnAction(e -> createIssue());
-        Label groupHint = Widgets.label("Tick the complaints below that describe the same problem, then name the issue.", "h-sub");
-        groupHint.setWrapText(true);
-        VBox groupCard = Pages.section("Group complaints into a common issue",
-            groupHint, issueTitle, issueDescription, selectedLabel, groupBanner, createIssue);
-
-        statusChips.setOnChange(o -> showList());
-        platformChips.setOnChange(o -> showList());
-        VBox filters = Pages.section("Show", statusChips, platformChips);
-
         page.getChildren().addAll(
             Pages.header(AdvocatePages.COMPLAINTS, "View, tag, escalate and resolve every complaint."),
-            banner, filters, groupCard, listHolder);
+            banner, Pages.section("Show", statusChips, platformChips), grouping.build(), listHolder);
         load();
         return Pages.scroll(page);
     }
@@ -101,11 +81,10 @@ public class AdvocateComplaintsPage {
         loaded = all.value();
         issues = issueList.isOk() ? issueList.value() : List.of();
         allTags = tagList.isOk() ? tagList.value() : List.of();
-        selected.retainAll(loaded.stream().map(v -> v.complaint().getComplaintId()).toList());
 
         setupFilters();
         showList();
-        updateGroupBar();
+        grouping.keepOnly(loaded.stream().map(v -> v.complaint().getComplaintId()).toList());
     }
 
     /** Keeps the chosen filters when the list is reloaded; builds the platform chips from the data. */
@@ -149,59 +128,16 @@ public class AdvocateComplaintsPage {
         }
     }
 
-    // ---------------------------------------------------------------- grouping (FR-33)
-
-    private void updateGroupBar() {
-        int count = selected.size();
-        selectedLabel.setText(count == 0 ? "No complaints ticked yet."
-            : count + (count == 1 ? " complaint ticked." : " complaints ticked."));
-        createIssue.setText(count == 0 ? "Create issue" : "Create issue from " + count);
-    }
-
-    private void createIssue() {
-        groupBanner.hide();
-        issueTitle.setError(null);
-        if (selected.isEmpty()) {
-            groupBanner.showError("Tick at least one complaint below first.");
-            return;
-        }
-        int count = selected.size();
-        Outcome<ComplaintCluster> result = ctx.app().advocateComplaints().createIssue(
-            ctx.userId(), new ArrayList<>(selected), issueTitle.text(), issueDescription.text());
-        if (result.isOk()) {
-            selected.clear();
-            issueTitle.setText("");
-            issueDescription.setText("");
-            load();
-            groupBanner.showSuccess("Common issue \"" + result.value().getTitle() + "\" created with "
-                + count + (count == 1 ? " complaint." : " complaints."));
-        } else {
-            groupBanner.showError(result.problems());
-        }
-    }
-
     // ---------------------------------------------------------------- one complaint
 
     private Node card(ComplaintView view) {
         Complaint complaint = view.complaint();
-        int id = complaint.getComplaintId();
-        Banner cardBanner = notes.bannerFor(id);
-
-        CheckBox pick = new CheckBox("Group");
-        pick.setStyle("-fx-text-fill: -muted; -fx-font-size: 12px;");
-        pick.setSelected(selected.contains(id));
-        pick.selectedProperty().addListener((obs, was, now) -> {
-            if (now) {
-                selected.add(id);
-            } else {
-                selected.remove(id);
-            }
-            updateGroupBar();
-        });
+        Banner cardBanner = notes.bannerFor(complaint.getComplaintId());
 
         Label title = Widgets.label(complaint.getCategory().label() + "  -  " + view.platformName()
             + "  -  " + view.workerName(), "section-title");
-        HBox top = new HBox(12, title, Widgets.spacer(), pick, ComplaintViews.statusChip(complaint.getStatus()));
+        HBox top = new HBox(12, title, Widgets.spacer(), grouping.tickBox(complaint.getComplaintId()),
+            ComplaintViews.statusChip(complaint.getStatus()));
         top.setAlignment(Pos.CENTER_LEFT);
 
         Label text = Widgets.label(complaint.getDescription(), "label");
@@ -211,7 +147,8 @@ public class AdvocateComplaintsPage {
         if (!view.responses().isEmpty()) {
             card.getChildren().add(ComplaintViews.answers(view.responses()));
         }
-        card.getChildren().addAll(tags(view, cardBanner), issueRow(view, cardBanner), cardBanner);
+        card.getChildren().addAll(tagEditor.build(view, allTags, cardBanner),
+            issueRow.build(view, issues, cardBanner), cardBanner);
 
         HBox actions = new HBox(12);
         actions.setAlignment(Pos.CENTER_LEFT);
@@ -233,124 +170,11 @@ public class AdvocateComplaintsPage {
         return card;
     }
 
-    // ---- tags
-
-    private Node tags(ComplaintView view, Banner cardBanner) {
-        int complaintId = view.complaint().getComplaintId();
-        FlowPane pills = new FlowPane(8, 8);
-        pills.setAlignment(Pos.CENTER_LEFT);
-        pills.getChildren().add(Widgets.label("Tags:", "muted"));
-        for (ComplaintTag tag : view.tags()) {
-            Button pill = Buttons.small(tag.getName() + "  ×");     // click to remove
-            pill.setOnAction(e -> removeTag(complaintId, tag, cardBanner));
-            pills.getChildren().add(pill);
-        }
-        if (view.tags().isEmpty()) {
-            pills.getChildren().add(Widgets.label("none yet", "hint-text"));
-        }
-
-        // existing tags that this complaint does not have yet: one click adds them
-        FlowPane suggestions = new FlowPane(8, 8);
-        suggestions.setAlignment(Pos.CENTER_LEFT);
-        for (ComplaintTag tag : allTags) {
-            boolean already = view.tags().stream().anyMatch(t -> t.getTagId().equals(tag.getTagId()));
-            if (!already) {
-                Button add = Buttons.small("+ " + tag.getName());
-                add.setOnAction(e -> addTag(complaintId, tag.getName(), cardBanner));
-                suggestions.getChildren().add(add);
-            }
-        }
-
-        HBox newTag = Widgets.field("list", "New tag, for example payment-delay", false);
-        TextInputControl input = Widgets.input(newTag);
-        newTag.setMaxWidth(340);
-        Button addNew = Buttons.small("Add tag");
-        addNew.setOnAction(e -> addTag(complaintId, input.getText(), cardBanner));
-        if (input instanceof javafx.scene.control.TextField field) {
-            field.setOnAction(e -> addTag(complaintId, field.getText(), cardBanner));     // Enter adds the tag too
-        }
-        HBox addRow = new HBox(10, newTag, addNew);
-        addRow.setAlignment(Pos.CENTER_LEFT);
-
-        VBox box = new VBox(8, pills);
-        if (!suggestions.getChildren().isEmpty()) {
-            box.getChildren().add(suggestions);
-        }
-        box.getChildren().add(addRow);
-        return box;
-    }
-
-    private void addTag(int complaintId, String name, Banner cardBanner) {
-        cardBanner.hide();
-        Outcome<ComplaintTag> result = ctx.app().advocateComplaints().tag(ctx.userId(), complaintId, name);
-        if (result.isOk()) {
-            notes.remember(complaintId, "Tag \"" + result.value().getName() + "\" added.");
-            load();
-        } else {
-            cardBanner.showError(result.problems());
-        }
-    }
-
-    private void removeTag(int complaintId, ComplaintTag tag, Banner cardBanner) {
-        cardBanner.hide();
-        Outcome<Void> result = ctx.app().advocateComplaints().removeTag(ctx.userId(), complaintId, tag.getTagId());
-        if (result.isOk()) {
-            notes.remember(complaintId, "Tag \"" + tag.getName() + "\" removed.");
-            load();
-        } else {
-            cardBanner.showError(result.problems());
-        }
-    }
-
-    // ---- common issue
-
-    private Node issueRow(ComplaintView view, Banner cardBanner) {
-        Complaint complaint = view.complaint();
-        int complaintId = complaint.getComplaintId();
-        FlowPane row = new FlowPane(8, 8);
-        row.setAlignment(Pos.CENTER_LEFT);
-
-        if (complaint.getClusterId() != null) {
-            row.getChildren().add(Widgets.label("Common issue: " + view.issueTitle(), "label"));
-            Button leave = Buttons.small("Remove from issue");
-            leave.setOnAction(e -> assign(complaintId, null, "Removed from the common issue.", cardBanner));
-            row.getChildren().add(leave);
-        } else if (!issues.isEmpty()) {
-            row.getChildren().add(Widgets.label("Add to an existing issue:", "muted"));
-            for (IssueSummary issue : issues) {
-                Button join = Buttons.small(issue.cluster().getTitle());
-                join.setOnAction(e -> assign(complaintId, issue.cluster().getClusterId(),
-                    "Added to \"" + issue.cluster().getTitle() + "\".", cardBanner));
-                row.getChildren().add(join);
-            }
-        } else {
-            row.getChildren().add(Widgets.label("Not in a common issue yet.", "hint-text"));
-        }
-        return row;
-    }
-
-    private void assign(int complaintId, Integer clusterId, String successNote, Banner cardBanner) {
-        cardBanner.hide();
-        Outcome<Void> result = ctx.app().advocateComplaints().assignToIssue(ctx.userId(), complaintId, clusterId);
-        if (result.isOk()) {
-            notes.remember(complaintId, successNote);
-            load();
-        } else {
-            cardBanner.showError(result.problems());
-        }
-    }
-
-    // ---- escalate and resolve
-
     private void escalate(Complaint complaint, Banner cardBanner) {
         cardBanner.hide();
         Outcome<Complaint> result = ctx.app().advocateComplaints().escalate(ctx.userId(), complaint.getComplaintId());
-        if (result.isOk()) {
-            notes.remember(complaint.getComplaintId(), "Complaint escalated. The worker has been notified.");
-            load();
-        } else {
-            cardBanner.showError(result.problems());
-        }
+        notes.finish(complaint.getComplaintId(), cardBanner, result,
+            "Complaint escalated. The worker has been notified.", this::load);
     }
 
     private void resolve(Complaint complaint, Banner cardBanner, Node source) {
@@ -360,11 +184,7 @@ public class AdvocateComplaintsPage {
             return;
         }
         Outcome<Complaint> result = ctx.app().advocateComplaints().resolveAsAdvocate(ctx.userId(), complaint.getComplaintId());
-        if (result.isOk()) {
-            notes.remember(complaint.getComplaintId(), "Complaint resolved. The worker has been notified.");
-            load();
-        } else {
-            cardBanner.showError(result.problems());
-        }
+        notes.finish(complaint.getComplaintId(), cardBanner, result,
+            "Complaint resolved. The worker has been notified.", this::load);
     }
 }

@@ -1,5 +1,6 @@
 package com.fairgig.ui;
 
+import com.fairgig.controller.Outcome;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,5 +25,18 @@ public final class CardNotes {
             banner.showSuccess(message);
         }
         return banner;
+    }
+
+    /**
+     * The usual end of a card action: on success remember the note and reload the list, so the
+     * rebuilt card shows it; on failure show the problems on the card itself.
+     */
+    public void finish(int id, Banner cardBanner, Outcome<?> result, String successNote, Runnable reload) {
+        if (result.isOk()) {
+            remember(id, successNote);
+            reload.run();
+        } else {
+            cardBanner.showError(result.problems());
+        }
     }
 }
