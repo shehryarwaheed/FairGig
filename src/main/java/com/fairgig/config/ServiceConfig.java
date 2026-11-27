@@ -10,9 +10,7 @@ import com.fairgig.strategy.analytics.*;
 import java.util.EnumMap;
 import java.util.Map;
 
-
 public final class ServiceConfig {
-
 
     public static Services create(DataSource ds) {
         // ---- repositories -------------------------------------------------
@@ -41,7 +39,7 @@ public final class ServiceConfig {
         return new Services(analyticsService, reportService, communityService, advocateService);
     }
 
-    /** Simple DTO to hold all top‑level services. */
+
     public static record Services(
             AnalyticsService analytics,
             ReportService report,

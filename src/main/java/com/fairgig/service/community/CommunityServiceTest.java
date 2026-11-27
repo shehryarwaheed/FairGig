@@ -18,8 +18,8 @@ class CommunityServiceTest {
 
     @BeforeEach
     void setUp() {
-        postRepo = new InMemoryPostRepository();
-        commentRepo = new InMemoryCommentRepository();
+        postRepo = new JdbcPostRepository();
+        commentRepo = new JdbcCommentRepository();
         likeRepo = new InMemoryLikeRepository();
         service = new DefaultCommunityService(postRepo, commentRepo, likeRepo);
         advocateService = new AdvocateCommunityService(postRepo);
