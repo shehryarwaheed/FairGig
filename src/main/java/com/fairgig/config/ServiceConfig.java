@@ -14,12 +14,12 @@ import java.util.Map;
 public final class ServiceConfig {
 
 
-    public static Services create() {
+    public static Services create(DataSource ds) {
         // ---- repositories -------------------------------------------------
-        InMemoryPostRepository postRepo = new InMemoryPostRepository();
-        InMemoryCommentRepository commentRepo = new InMemoryCommentRepository();
-        InMemoryLikeRepository likeRepo = new InMemoryLikeRepository();
-        InMemoryEarningsRepository earningsRepo = new InMemoryEarningsRepository();
+        PostRepository postRepo = new JdbcPostRepository(ds);
+        CommentRepository commentRepo = new JdbcCommentRepository(ds);
+        LikeRepository likeRepo = new JdbcLikeRepository(ds);
+        EarningsRepository earningsRepo = new JdbcEarningsRepository(ds);
 
         // ---- analytics ----------------------------------------------------
         AnalyticsStrategy<EarningsSummary> summaryStrat = new EarningsSummaryStrategy(earningsRepo);
