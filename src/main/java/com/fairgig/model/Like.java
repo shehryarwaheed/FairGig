@@ -21,5 +21,18 @@ public final class Like {
     public int getPostId() { return postId; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 
-    int getUserId() { return userId; } // package‑private, used by the service
+    int getUserId() { return userId; }
+
+    @Override
+    public boolean equals(Object o) {
+                if (this == o) return true;
+               if (!(o instanceof Like)) return false;
+               Like that = (Like) o;
+               return Objects.equals(id, that.id);
+           }
+
+           @Override
+               public int hashCode() {
+               return Objects.hash(id);
+           }
 }

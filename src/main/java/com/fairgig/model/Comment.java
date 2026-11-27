@@ -33,4 +33,16 @@ public final class Comment {
     public LocalDateTime getCreatedAt() { return createdAt; }
 
     int getAuthorId() { return authorId; }
+
+    @Override
+    public boolean equals(Object o) {
+                if (this == o) return true;
+               if (!(o instanceof Comment)) return false;
+                Comment that = (Comment) o;
+               return Objects.equals(id, that.id);
+            }
+    @Override
+    public int hashCode() {
+               return Objects.hash(id);
+            }
 }
