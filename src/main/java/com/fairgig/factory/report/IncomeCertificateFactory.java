@@ -1,5 +1,6 @@
 
 package com.fairgig.factory.report;
+import com.fairgig.service.analytics.AnalyticsResult;
 
 import com.fairgig.strategy.analytics.EarningsSummary;
 import com.fairgig.service.analytics.AnalyticsService;

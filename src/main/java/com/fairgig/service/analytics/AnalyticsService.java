@@ -1,6 +1,6 @@
 
 package com.fairgig.service.analytics;
-
+import com.fairgig.service.analytics.AnalyticsResult;
 import com.fairgig.strategy.analytics.*;
 import java.util.Objects;
 

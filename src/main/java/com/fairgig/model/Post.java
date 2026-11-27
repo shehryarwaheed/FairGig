@@ -41,11 +41,11 @@ public final class Post {
     public List<Like> getLikes() { return Collections.unmodifiableList(likes); }
 
     // ---------- internal mutators for the service layer ----------
-    void addComment(Comment comment) {
+    public void addComment(Comment comment) {
         comments.add(comment);
     }
 
-    void addLike(Like like) {
+    public void addLike(Like like) {
         likes.add(like);
     }
 

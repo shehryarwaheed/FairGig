@@ -1,6 +1,7 @@
 
 package com.fairgig.service.community;
-
+import com.fairgig.model.Comment;
+import com.fairgig.model.Like;
 import com.fairgig.model.*;
 import com.fairgig.repository.*;
 import com.fairgig.util.ValidationException;
