@@ -4,6 +4,7 @@ package com.fairgig.factory.report;
 import com.fairgig.strategy.analytics.EarningsSummary;
 import com.fairgig.service.analytics.AnalyticsService;
 import com.fairgig.service.analytics.AnalyticsRequest;
+import com.fairgig.service.analytics.AnalyticsResult;
 import java.time.LocalDate;
 
 
@@ -31,4 +32,5 @@ public final class EarningsReportFactory implements ReportFactory {
 
         return new Report("Earnings Report", sb.toString());
     }
+
 }
