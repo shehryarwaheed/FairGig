@@ -107,8 +107,29 @@ src/main/resources
 
 Repository, Factory Method, State, Strategy and Proxy.
 
+## Tests
+
+`mvn test` runs about 154 JUnit 5 tests:
+- **Unit tests** (`src/test/java/com/fairgig/unit`): the Factory, Strategy and Proxy patterns, password security,
+  CSV parser, evidence file rules, validation rules and error handling.
+- **Integration tests** (`src/test/java/com/fairgig/integration`): every repository and service against the real
+  PostgreSQL database, the 5,000-record and 1,000-row speed targets, and the JavaFX screens driven without a window.
+  They create their own uniquely named data and delete it afterwards. If PostgreSQL is not running they are skipped.
+
+## Project status
+
+| Area | Owner | Status |
+|---|---|---|
+| Foundation: schema, database, models, repositories, security, proxy, controllers, app shell and theme | Shehryar | Done |
+| Accounts, platforms, earnings entry, CSV import, evidence, notifications (FR-01 to FR-14, FR-41, FR-42) | Shehryar | Done, with screens |
+| Verification workflow, commission rates, complaints (FR-15 to FR-22, FR-26, FR-27, FR-30 to FR-33) | Aqsa | To do |
+| Analytics, reports, community board, rate intelligence, advocate analytics (FR-23 to FR-25, FR-28, FR-29, FR-34 to FR-40) | Zainab | To do |
+
+Tabs of the unfinished features show a friendly placeholder until their owner plugs them in.
+
 ## More documents
 
+- `TEAM_GUIDE.md`: how to add a feature, the building blocks that already exist, and the exact feature list for each team member.
 - `implementation_plan.md`: full workflow, architecture and how the work is split between the three members.
 
 ## Team
