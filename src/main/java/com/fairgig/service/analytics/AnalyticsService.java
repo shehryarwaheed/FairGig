@@ -1,41 +1,17 @@
-
 package com.fairgig.service.analytics;
-import com.fairgig.service.analytics.AnalyticsResult;
-import com.fairgig.strategy.analytics.*;
-import java.util.Objects;
 
-public final class AnalyticsService {
+import com.fairgig.model.Role;
+import com.fairgig.proxy.Access;
+import com.fairgig.proxy.Self;
+import java.time.LocalDate;
 
-    private final AnalyticsStrategy<EarningsSummary> summaryStrategy;
-    private final AnalyticsStrategy<PlatformTrend> trendStrategy;
-    private final AnalyticsStrategy<CityMedianComparison> medianStrategy;
+/** Analytics for workers (FR-23 to FR-25) and advocates (FR-39, FR-40). */
+public interface AnalyticsService {
 
-    public AnalyticsService(AnalyticsStrategy<EarningsSummary> summaryStrategy,
-                            AnalyticsStrategy<PlatformTrend> trendStrategy,
-                            AnalyticsStrategy<CityMedianComparison> medianStrategy) {
-        this.summaryStrategy = Objects.requireNonNull(summaryStrategy);
-        this.trendStrategy = Objects.requireNonNull(trendStrategy);
-        this.medianStrategy = Objects.requireNonNull(medianStrategy);
-    }
+    /** Null dates mean "no limit". */
+    @Access(roles = Role.WORKER)
+    WorkerAnalytics myAnalytics(@Self int workerId, LocalDate from, LocalDate to);
 
-    public AnalyticsResult execute(AnalyticsRequest request) {
-        switch (request.getType()) {
-            case SUMMARY -> {
-                EarningsSummary summary = summaryStrategy.execute(
-                        request.getWorkerId(), request.getFrom(), request.getTo());
-                return new AnalyticsResult(summary);
-            }
-            case PLATFORM_TREND -> {
-                PlatformTrend trend = trendStrategy.execute(
-                        request.getWorkerId(), request.getFrom(), request.getTo());
-                return new AnalyticsResult(trend);
-            }
-            case CITY_MEDIAN -> {
-                CityMedianComparison median = medianStrategy.execute(
-                        request.getWorkerId(), request.getFrom(), request.getTo());
-                return new AnalyticsResult(median);
-            }
-            default -> throw new IllegalArgumentException("Unsupported analytics type");
-        }
-    }
+    @Access(roles = Role.ADVOCATE)
+    AdvocateAnalytics advocateOverview();
 }

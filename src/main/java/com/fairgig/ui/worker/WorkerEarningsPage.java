@@ -3,12 +3,15 @@ package com.fairgig.ui.worker;
 import com.fairgig.controller.Outcome;
 import com.fairgig.model.EarningInput;
 import com.fairgig.model.EarningsRecord;
+import com.fairgig.model.RateChange;
 import com.fairgig.service.platform.WorkerPlatformInfo;
 import com.fairgig.strategy.validation.FieldProblem;
 import com.fairgig.strategy.validation.ValidationResult;
 import com.fairgig.ui.Banner;
 import com.fairgig.ui.Buttons;
 import com.fairgig.ui.ChipGroup;
+import com.fairgig.ui.CurrencyState;
+import com.fairgig.ui.Fmt;
 import com.fairgig.ui.FormField;
 import com.fairgig.ui.NavItem;
 import com.fairgig.ui.PageContext;
@@ -16,11 +19,13 @@ import com.fairgig.ui.Pages;
 import com.fairgig.ui.UiParse;
 import com.fairgig.ui.Widgets;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -46,6 +51,8 @@ public class WorkerEarningsPage {
     private final Banner banner = new Banner();
     private final ChipGroup<WorkerPlatformInfo> platformChips = new ChipGroup<>(i -> i.platform().getName());
     private final Label platformError = Widgets.label("", "error-text");
+    private final Label rateHint = Widgets.label("", "h-sub");
+    private List<RateChange> rateHistory = List.of();
     private final FormField date = new FormField("Shift date", "calendar", "2026-11-23", false);
     private final FormField hours = new FormField("Hours worked", "pending", "6.5", false);
     private final FormField gross = new FormField("Gross earnings", "money", "5200.00", false);
@@ -67,6 +74,9 @@ public class WorkerEarningsPage {
 
         platformError.setVisible(false);
         platformError.setManaged(false);
+        rateHint.setWrapText(true);
+        rateHint.setVisible(false);
+        rateHint.setManaged(false);
         date.setText(LocalDate.now().toString());
 
         Button today = quickDate("Today", 0);
@@ -101,15 +111,18 @@ public class WorkerEarningsPage {
         Label platformLabel = Widgets.label("Platform", "field-label");
         VBox form = Pages.section("Log an earning",
             Widgets.label("Enter what you earned for one shift. It starts as Pending until the platform's representative checks it.", "h-sub"),
-            noPlatformHint, platformLabel, platformChips, platformError, grid, quick, banner, buttons);
+            noPlatformHint, platformLabel, platformChips, rateHint, platformError, grid, quick, banner, buttons);
 
         VBox tableCard = Pages.section("Latest earnings", tableHolder);
 
         // live validation
         platformChips.setOnChange(p -> {
             touched.add("platform");
+            loadRates();
             validate(false);
         });
+        date.onChange(this::showRate);
+        gross.onChange(this::showRate);
         date.onLeave(() -> touch("shiftDate"));
         hours.onLeave(() -> touch("hoursWorked"));
         gross.onLeave(() -> touch("grossEarnings"));
@@ -169,6 +182,69 @@ public class WorkerEarningsPage {
             return;
         }
         tableHolder.getChildren().add(WorkerViews.earningsTable(recent.value(), WorkerViews.platformNames(ctx)));
+    }
+
+    // ---------------------------------------------------------------- commission rate
+
+    /** Reads the rate history of the chosen platform (recorded by its representative). */
+    private void loadRates() {
+        WorkerPlatformInfo chosen = platformChips.selected();
+        rateHistory = List.of();
+        if (chosen != null) {
+            Outcome<List<RateChange>> history = ctx.app().commission().history(chosen.platform().getPlatformId());
+            if (!history.isOk()) {
+                banner.showError(history.problems());
+            } else {
+                rateHistory = history.value();
+            }
+        }
+        showRate();
+    }
+
+    /**
+     * Shows the commission rate in force on the shift date (0% when none is recorded) and what it
+     * means for the typed gross. It is information only: the worker types the real deductions.
+     */
+    private void showRate() {
+        WorkerPlatformInfo chosen = platformChips.selected();
+        rateHint.setVisible(chosen != null);
+        rateHint.setManaged(chosen != null);
+        if (chosen == null) {
+            return;
+        }
+        LocalDate day = LocalDate.now();
+        BigDecimal amount = null;
+        try {
+            LocalDate typed = UiParse.date(date.text());
+            day = typed == null ? day : typed;
+        } catch (IllegalArgumentException ignored) {
+            // the date field shows its own message
+        }
+        try {
+            amount = UiParse.decimal(gross.text());
+        } catch (IllegalArgumentException ignored) {
+            // the gross field shows its own message
+        }
+        BigDecimal rate = rateOn(rateHistory, day);
+        String text = chosen.platform().getName() + " commission rate: "
+            + (rate == null ? "0% (no rate recorded for this date)" : Fmt.hours(rate) + "%");
+        if (amount != null && amount.signum() > 0) {
+            BigDecimal commission = rate == null ? BigDecimal.ZERO
+                : amount.multiply(rate).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+            text += "  -  on your gross that is " + CurrencyState.currentProperty().get().symbol() + " "
+                + Fmt.number(commission);
+        }
+        rateHint.setText(text + ". Type the deductions your statement shows.");
+    }
+
+    /** The percentage in force on that day, or null when none had been recorded yet. */
+    private static BigDecimal rateOn(List<RateChange> history, LocalDate day) {
+        return history.stream().map(RateChange::rate)
+            .filter(r -> !r.getEffectiveDate().isAfter(day))
+            .max(Comparator.comparing((com.fairgig.model.CommissionRate r) -> r.getEffectiveDate())
+                .thenComparing(r -> r.getRateId()))
+            .map(com.fairgig.model.CommissionRate::getRatePercent)
+            .orElse(null);
     }
 
     // ---------------------------------------------------------------- form logic
@@ -293,6 +369,8 @@ public class WorkerEarningsPage {
             banner.hide();
             date.setText(LocalDate.now().toString());
             platformChips.clearSelection();
+            rateHistory = List.of();
         }
+        showRate();
     }
 }

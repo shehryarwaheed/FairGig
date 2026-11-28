@@ -149,7 +149,14 @@ public class AppShell extends StackPane implements PageNavigator {
         userCard.getStyleClass().add("clay-card");
         userCard.setPadding(new Insets(12, 14, 12, 12));
 
-        side.getChildren().addAll(logo, navBox, Widgets.spacer(), userCard);
+        // the tabs scroll when the window is short, so the user card and logout stay visible
+        javafx.scene.control.ScrollPane tabs = new javafx.scene.control.ScrollPane(navBox);
+        tabs.setFitToWidth(true);
+        tabs.setHbarPolicy(javafx.scene.control.ScrollPane.ScrollBarPolicy.NEVER);
+        tabs.getStyleClass().add("transparent-scroll");
+        tabs.setMinHeight(0);
+        VBox.setVgrow(tabs, Priority.ALWAYS);
+        side.getChildren().addAll(logo, tabs, userCard);
         return side;
     }
 

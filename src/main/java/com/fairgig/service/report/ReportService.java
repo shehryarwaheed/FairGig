@@ -1,36 +1,26 @@
-
 package com.fairgig.service.report;
 
-import com.fairgig.factory.report.Report;
-import com.fairgig.factory.report.ReportFactory;
-import java.util.Map;
-import java.util.Objects;
+import com.fairgig.model.Report;
+import com.fairgig.model.Role;
+import com.fairgig.proxy.Access;
+import com.fairgig.proxy.Self;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.util.List;
 
+/** Reports and income certificates (FR-28, FR-29). */
+public interface ReportService {
 
-public final class ReportService {
+    @Access(roles = Role.WORKER)
+    ReportDocument monthly(@Self int workerId, YearMonth month);
 
-    public enum Type { EARNINGS, INCOME_CERTIFICATE }
+    @Access(roles = Role.WORKER)
+    ReportDocument yearly(@Self int workerId, int year);
 
-    private final Map<Type, ReportFactory> factories;
+    /** Shows verified earnings only. Refused when the range has none. */
+    @Access(roles = Role.WORKER)
+    ReportDocument incomeCertificate(@Self int workerId, LocalDate from, LocalDate to);
 
-    public ReportService(Map<Type, ReportFactory> factories) {
-        this.factories = Objects.requireNonNull(factories);
-    }
-
-    /**
-     * Generates a report.
-     *
-     * @param type   the type of report requested
-     * @param workerId the worker the report concerns
-     * @param from   start date (inclusive)
-     * @param to     end date (inclusive)
-     */
-    public Report generate(Type type, int workerId,
-                           java.time.LocalDate from, java.time.LocalDate to) {
-        ReportFactory factory = factories.get(type);
-        if (factory == null) {
-            throw new IllegalArgumentException("Unsupported report type: " + type);
-        }
-        return factory.create(workerId, from, to);
-    }
+    @Access(roles = Role.WORKER)
+    List<Report> myReports(@Self int workerId);
 }

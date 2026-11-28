@@ -412,3 +412,8 @@
 
 /* ---- compact button (see ui.Buttons.small) ---- */
 .btn-small { -fx-padding: 5 12 5 12; -fx-font-size: 12px; }
+
+/* ---- multi-line text boxes ---- */
+.text-area { -fx-background-color: -well; -fx-background-radius: 14; -fx-text-fill: -text; -fx-prompt-text-fill: -whisper; }
+.text-area .content { -fx-background-color: -well; -fx-background-radius: 14; }
+.text-area .scroll-pane, .text-area .viewport { -fx-background-color: transparent; }

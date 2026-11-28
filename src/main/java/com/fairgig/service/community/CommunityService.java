@@ -1,28 +1,28 @@
-
 package com.fairgig.service.community;
 
-import com.fairgig.model.Post;
-import com.fairgig.model.Comment;
 import com.fairgig.model.PostCategory;
-import java.time.LocalDateTime;
+import com.fairgig.model.Role;
+import com.fairgig.proxy.Access;
+import com.fairgig.proxy.Self;
 import java.util.List;
 
-/**
- * • Workers create anonymous posts (FR‑34).<br>
- * • Workers can comment, reply and like a post once (FR‑35).<br>
- * • Advocate can remove posts (FR‑36).
- */
+/** The anonymous community board (FR-34, FR-35). Advocates may read it to moderate. */
 public interface CommunityService {
-    /** Creates an anonymous post for the given worker. */
-    Post createPost(int workerId, PostCategory category, String content, LocalDateTime now);
 
-    /** Adds a comment (or reply) to a post. */
-    Comment addComment(int workerId, int postId, Integer parentCommentId,
-                       String content, LocalDateTime now);
+    @Access(roles = {Role.WORKER, Role.ADVOCATE})
+    List<PostView> board(@Self int userId);
 
-    /** Likes a post – a worker may like a post at most once. */
-    void likePost(int workerId, int postId, LocalDateTime now);
+    @Access(roles = {Role.WORKER, Role.ADVOCATE})
+    List<CommentView> comments(@Self int userId, int postId);
 
-    /** Returns all posts (read‑only view). */
-    List<Post> listPosts();
+    @Access(roles = Role.WORKER)
+    PostView createPost(@Self int workerId, PostCategory category, String title, String content, Integer platformId);
+
+    /** parentCommentId is null for a comment, or the comment being replied to. */
+    @Access(roles = Role.WORKER)
+    CommentView addComment(@Self int workerId, int postId, Integer parentCommentId, String content);
+
+    /** A worker can like a post once. */
+    @Access(roles = Role.WORKER)
+    void likePost(@Self int workerId, int postId);
 }

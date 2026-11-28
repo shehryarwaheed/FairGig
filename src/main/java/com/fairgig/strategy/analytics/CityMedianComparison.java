@@ -1,25 +1,16 @@
-
 package com.fairgig.strategy.analytics;
 
 import java.math.BigDecimal;
 
 /**
- * Result for FR‑25 – comparison of a worker's earnings against the anonymised city‑wide median.
+ * FR-25: the worker next to the anonymized city median (per worker totals for the same period).
+ * The medians are null when too few workers have data to keep them anonymous.
  */
-public final class CityMedianComparison {
-    private final BigDecimal workerIncome;
-    private final BigDecimal cityMedianIncome;
+public record CityMedianComparison(BigDecimal workerNet, BigDecimal medianNet,
+                                   BigDecimal workerHourlyRate, BigDecimal medianHourlyRate,
+                                   int workersCompared) {
 
-    public CityMedianComparison(BigDecimal workerIncome, BigDecimal cityMedianIncome) {
-        this.workerIncome = workerIncome;
-        this.cityMedianIncome = cityMedianIncome;
-    }
-
-    public BigDecimal getWorkerIncome() { return workerIncome; }
-    public BigDecimal getCityMedianIncome() { return cityMedianIncome; }
-
-    /** Returns true if the worker earns above the city median. */
-    public boolean isAboveMedian() {
-        return workerIncome.compareTo(cityMedianIncome) > 0;
+    public boolean hasMedian() {
+        return medianNet != null;
     }
 }

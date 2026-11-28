@@ -1,13 +1,18 @@
-
 package com.fairgig.model;
 
-/**
- * Categories that a worker can assign to a post.
- */
+/** Category of a community post. The names match the database CHECK constraint. */
 public enum PostCategory {
-    GENERAL,
-    RATES,
-    DEDUCTIONS,
-    INCENTIVES,
-    OTHER
+    PLATFORM_RATES("Platform rates"),
+    COMPLAINT("Complaint"),
+    SUPPORT_REQUEST("Support request");
+
+    private final String label;
+
+    PostCategory(String label) {
+        this.label = label;
+    }
+
+    public String label() {
+        return label;
+    }
 }

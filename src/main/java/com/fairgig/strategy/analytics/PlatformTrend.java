@@ -1,22 +1,14 @@
-
 package com.fairgig.strategy.analytics;
 
 import java.math.BigDecimal;
-import java.time.YearMonth;
 import java.util.Map;
+import java.util.SortedMap;
 
 /**
- * Result for FR‑24 – earnings per platform, grouped by week / month.
- * The map key is a period identifier (e.g., “2023‑04‑W01” or “2023‑04”).
+ * FR-24: totals per platform (keyed by platform id) and net income per week ("2026-W45")
+ * and per month ("2026-11"), oldest first.
  */
-public final class PlatformTrend {
-    private final Map<String, Map<String, BigDecimal>> platformToPeriodIncome;
-
-    public PlatformTrend(Map<String, Map<String, BigDecimal>> platformToPeriodIncome) {
-        this.platformToPeriodIncome = Map.copyOf(platformToPeriodIncome);
-    }
-
-    public Map<String, Map<String, BigDecimal>> getPlatformToPeriodIncome() {
-        return platformToPeriodIncome;
-    }
+public record PlatformTrend(Map<Integer, EarningsSummary> byPlatform,
+                            SortedMap<String, BigDecimal> weekly,
+                            SortedMap<String, BigDecimal> monthly) {
 }

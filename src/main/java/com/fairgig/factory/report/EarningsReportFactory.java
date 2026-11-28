@@ -1,36 +1,28 @@
-
 package com.fairgig.factory.report;
 
-import com.fairgig.strategy.analytics.EarningsSummary;
-import com.fairgig.service.analytics.AnalyticsService;
-import com.fairgig.service.analytics.AnalyticsRequest;
-import com.fairgig.service.analytics.AnalyticsResult;
-import java.time.LocalDate;
+import com.fairgig.model.EarningsRecord;
+import com.fairgig.model.ReportType;
+import java.util.List;
 
+/** Monthly and yearly earnings reports: every earning of the period (FR-28). */
+public class EarningsReportFactory extends ReportFactory {
 
-public final class EarningsReportFactory implements ReportFactory {
+    private final ReportType type;
 
-    private final AnalyticsService analyticsService;
-
-    public EarningsReportFactory(AnalyticsService analyticsService) {
-        this.analyticsService = analyticsService;
+    public EarningsReportFactory(ReportType type) {
+        if (type == ReportType.INCOME_CERTIFICATE) {
+            throw new IllegalArgumentException("Use IncomeCertificateFactory for certificates.");
+        }
+        this.type = type;
     }
 
     @Override
-    public Report create(int workerId, LocalDate from, LocalDate to) {
-        AnalyticsRequest req = new AnalyticsRequest(
-                AnalyticsRequest.Type.SUMMARY, workerId, from, to);
-        EarningsSummary summary = (EarningsSummary) analyticsService
-                .execute(req).getPayload();
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("Worker ID: ").append(workerId).append('\n');
-        sb.append("Period: ").append(from).append(" – ").append(to).append('\n');
-        sb.append("Total Income: ").append(summary.getTotalIncome()).append('\n');
-        sb.append("Total Deductions: ").append(summary.getTotalDeductions()).append('\n');
-        sb.append("Effective Hourly Rate: ").append(summary.getEffectiveHourlyRate()).append('\n');
-
-        return new Report("Earnings Report", sb.toString());
+    public ReportType type() {
+        return type;
     }
 
+    @Override
+    public List<EarningsRecord> select(List<EarningsRecord> inPeriod) {
+        return inPeriod;
+    }
 }
