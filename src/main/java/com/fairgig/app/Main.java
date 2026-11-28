@@ -23,10 +23,11 @@ public class Main extends Application {
 
         new Navigator(root).showLogin();
 
-        stage.setTitle("FairGig - UI Prototype");
+        stage.setTitle("FairGig");
         stage.setMinWidth(1180);
         stage.setMinHeight(760);
         stage.setScene(scene);
+        stage.setMaximized(true);     // open filling the screen
         stage.show();
     }
 

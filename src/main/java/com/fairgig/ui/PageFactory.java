@@ -1,6 +1,14 @@
 package com.fairgig.ui;
 
+import com.fairgig.ui.advocate.AdvocateAnalyticsPage;
 import com.fairgig.ui.advocate.AdvocateComplaintsPage;
+import com.fairgig.ui.advocate.AdvocateHomePage;
+import com.fairgig.ui.advocate.AdvocateModerationPage;
+import com.fairgig.ui.advocate.AdvocateTrendsPage;
+import com.fairgig.ui.worker.WorkerAnalyticsPage;
+import com.fairgig.ui.worker.WorkerCommunityPage;
+import com.fairgig.ui.worker.WorkerRatesPage;
+import com.fairgig.ui.worker.WorkerReportsPage;
 import com.fairgig.ui.advocate.AdvocateIssuesPage;
 import com.fairgig.ui.advocate.AdvocatePages;
 import com.fairgig.ui.verifier.VerifierCommissionPage;
@@ -66,7 +74,19 @@ public final class PageFactory {
                     case WorkerPages.EVIDENCE -> {
                         return new WorkerEvidencePage(ctx).build();
                     }
-                    default -> { /* teammates' tabs: placeholder below */ }
+                    case "Analytics" -> {
+                        return new WorkerAnalyticsPage(ctx).build();
+                    }
+                    case "Reports" -> {
+                        return new WorkerReportsPage(ctx).build();
+                    }
+                    case "Community" -> {
+                        return new WorkerCommunityPage(ctx).build();
+                    }
+                    case "Rate Insights" -> {
+                        return new WorkerRatesPage(ctx).build();
+                    }
+                    default -> { /* every worker tab is built */ }
                 }
             }
             case REPRESENTATIVE -> {
@@ -97,7 +117,19 @@ public final class PageFactory {
                     case AdvocatePages.ISSUE_CLUSTERS -> {
                         return new AdvocateIssuesPage(ctx).build();
                     }
-                    default -> { /* home, moderation and analytics: placeholders for now */ }
+                    case AdvocatePages.HOME -> {
+                        return new AdvocateHomePage(ctx).build();
+                    }
+                    case "Moderation" -> {
+                        return new AdvocateModerationPage(ctx).build();
+                    }
+                    case "Analytics" -> {
+                        return new AdvocateAnalyticsPage(ctx).build();
+                    }
+                    case "Commission Trends" -> {
+                        return new AdvocateTrendsPage(ctx).build();
+                    }
+                    default -> { /* every advocate tab is built */ }
                 }
             }
             default -> { }

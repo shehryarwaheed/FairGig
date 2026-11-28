@@ -1,5 +1,20 @@
 package com.fairgig.controller;
 
+import com.fairgig.database.Transactions;
+import com.fairgig.repository.jdbc.JdbcCityStatsRepository;
+import com.fairgig.repository.jdbc.JdbcCommentRepository;
+import com.fairgig.repository.jdbc.JdbcPostRepository;
+import com.fairgig.repository.jdbc.JdbcRateReportRepository;
+import com.fairgig.repository.jdbc.JdbcReportRepository;
+import com.fairgig.service.analytics.AnalyticsService;
+import com.fairgig.service.analytics.DefaultAnalyticsService;
+import com.fairgig.service.community.AdvocateCommunityService;
+import com.fairgig.service.community.CommunityService;
+import com.fairgig.service.community.DefaultCommunityService;
+import com.fairgig.service.community.DefaultRateIntelligenceService;
+import com.fairgig.service.community.RateIntelligenceService;
+import com.fairgig.service.report.DefaultReportService;
+import com.fairgig.service.report.ReportService;
 import com.fairgig.database.DatabaseConnection;
 import com.fairgig.proxy.AccessProxy;
 import com.fairgig.repository.CommissionRateRepository;
@@ -111,6 +126,9 @@ public final class AppContext {
     private final RepresentativeComplaintController representativeComplaintController;
     private final AdvocateComplaintController advocateComplaintController;
 
+    private final AnalyticsController analyticsController;
+    private final CommunityController communityController;
+
     private AppContext() {
         auth = AccessProxy.wrap(AuthService.class, new DefaultAuthService(users, platformRepository));
         platforms = AccessProxy.wrap(PlatformService.class,
@@ -158,6 +176,22 @@ public final class AppContext {
         workerComplaintController = new WorkerComplaintController(workerComplaints);
         representativeComplaintController = new RepresentativeComplaintController(representativeComplaints);
         advocateComplaintController = new AdvocateComplaintController(advocateComplaints);
+
+        // ---- analytics, reports, community and rate intelligence (FR-23 to FR-25, FR-28, FR-29, FR-34 to FR-40)
+        AnalyticsService analytics = AccessProxy.wrap(AnalyticsService.class,
+            new DefaultAnalyticsService(earningsRepository, users, platformRepository, new JdbcCityStatsRepository(),
+                commissionRateRepository, complaintRepository));
+        ReportService reports = AccessProxy.wrap(ReportService.class,
+            new DefaultReportService(earningsRepository, new JdbcReportRepository(), users, platformRepository,
+                Transactions.standard()));
+        DefaultCommunityService board = new DefaultCommunityService(new JdbcPostRepository(),
+            new JdbcCommentRepository(), platformRepository);
+        analyticsController = new AnalyticsController(analytics, reports);
+        communityController = new CommunityController(
+            AccessProxy.wrap(CommunityService.class, board),
+            AccessProxy.wrap(AdvocateCommunityService.class, board),
+            AccessProxy.wrap(RateIntelligenceService.class,
+                new DefaultRateIntelligenceService(new JdbcRateReportRepository(), platformRepository, users)));
     }
 
     /** The shared instance (created on first use). */
@@ -171,6 +205,14 @@ public final class AppContext {
     /** True when the database can be reached with the settings in .env. */
     public static boolean databaseAvailable() {
         return DatabaseConnection.isAvailable();
+    }
+
+    public AnalyticsController analytics() {
+        return analyticsController;
+    }
+
+    public CommunityController community() {
+        return communityController;
     }
 
     public AuthController auth() {
